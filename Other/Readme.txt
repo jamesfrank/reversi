@@ -1,0 +1,3 @@
+Looking at the VGA port I realized we really have 8-bit video out based on 3 red signals, 3 green signals, and 2 blue signals. So this means if I want to display a bitmap for the pieces / board / win screen it would necessitate converting an image into that palette.
+
+So I made a tool in C# (N2PaletteConverter) that will convert a bitmap over to that palette, let you see what it *should* look like, and give you the hex that can be flashed onto the board to display it.
