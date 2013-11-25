@@ -1,0 +1,16 @@
+NET "clk50" LOC = "B8";
+
+NET "reset" LOC = "B18";
+NET "reset" CLOCK_DEDICATED_ROUTE = FALSE;
+
+NET "vga<0>" LOC = "R9"; # Red 0
+NET "vga<1>" LOC = "T8"; # Red 1
+NET "vga<2>" LOC = "R8"; # Red 2
+NET "vga<3>" LOC = "N8"; # Green 0
+NET "vga<4>" LOC = "P8"; # Green 1
+NET "vga<5>" LOC = "P6"; # Green 2
+NET "vga<6>" LOC = "U5"; # Blue 0
+NET "vga<7>" LOC = "U4"; # Blue 1
+
+NET "vga_hs" LOC = "T4";
+NET "vga_vs" LOC = "U3";

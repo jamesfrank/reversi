@@ -1,0 +1,22 @@
+V3 12
+FL C:/Users/eric_000/Documents/GitHub/Reversi/Final_Project/Final_Project.vhd 2013/11/25.14:59:01 P.68d
+EN work/final_project_top 1385415693 \
+      FL C:/Users/eric_000/Documents/GitHub/Reversi/Final_Project/Final_Project.vhd \
+      PB ieee/std_logic_1164 1370735607 PB ieee/NUMERIC_STD 1370735611 LB work
+AR work/final_project_top/Behavioral 1385415694 \
+      FL C:/Users/eric_000/Documents/GitHub/Reversi/Final_Project/Final_Project.vhd \
+      EN work/final_project_top 1385415693
+FL D:/git/VHDL_Class/Final_Project/counterWithPulse_1kHz.vhd 2013/09/22.14:17:02 P.68d
+EN work/counterWithPulse_1kHz 1385401846 \
+      FL D:/git/VHDL_Class/Final_Project/counterWithPulse_1kHz.vhd \
+      PB ieee/std_logic_1164 1370735607 PB ieee/NUMERIC_STD 1370735611 LB work
+AR work/counterWithPulse_1kHz/behavioral 1385401847 \
+      FL D:/git/VHDL_Class/Final_Project/counterWithPulse_1kHz.vhd \
+      EN work/counterWithPulse_1kHz 1385401846
+FL D:/git/VHDL_Class/Final_Project/Final_Project.vhd 2013/11/25.14:58:42 P.68d
+FL D:/git/VHDL_Class/Final_Project/seg7_driver.vhd 2013/09/22.14:17:20 P.68d
+EN work/seg7_driver 1385401848 FL D:/git/VHDL_Class/Final_Project/seg7_driver.vhd \
+      PB ieee/std_logic_1164 1370735607 PB ieee/NUMERIC_STD 1370735611 LB work
+AR work/seg7_driver/Behavioral 1385401849 \
+      FL D:/git/VHDL_Class/Final_Project/seg7_driver.vhd EN work/seg7_driver 1385401848 \
+      CP counterWithPulse_1kHz
