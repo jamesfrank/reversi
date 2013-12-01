@@ -30,35 +30,28 @@ architecture behavioral of final_project_top is
    signal current_position : unsigned(5 downto 0); 
 begin
 
-   -- Setup a test current_position somewhere in the middle.
-   current_position <= "100000";
+   -- Initialize the current_position to spot 0.
+   current_position <= "000000";
 
    -- Setup a test game_board array.
    process(clk50,reset)
    begin
       if(reset = '1') then
-         game_board <= (others => x"0F");
+		   -- Initialize to all green unplayables.
+         game_board     <= (others => x"01");
+			-- Add the 4 blocks in the middle.
+         game_board(27) <= x"02";
+         game_board(28) <= x"03";
+         game_board(35) <= x"03";
+         game_board(36) <= x"02";
+			-- Add the white playable spaces.
+         game_board(20) <= x"41";
+         game_board(29) <= x"41";
+         game_board(34) <= x"41";
+         game_board(43) <= x"41";
 
       elsif(rising_edge(clk50)) then
-		   -- First row.
-         game_board(0)  <= x"00";
-         game_board(1)  <= x"01";
-         game_board(2)  <= x"02";
-         game_board(3)  <= x"03";
-         game_board(4)  <= x"00";
-         game_board(5)  <= x"01";
-         game_board(6)  <= x"02";
-         game_board(7)  <= x"03";
-			
-		   -- Last Row.
-         game_board(56)  <= x"00";
-         game_board(57)  <= x"01";
-         game_board(58)  <= x"02";
-         game_board(59)  <= x"03";
-         game_board(60)  <= x"00";
-         game_board(61)  <= x"01";
-         game_board(62)  <= x"02";
-         game_board(63)  <= x"03";
+		   -- Do nothing.
       end if;
    end process;
 
@@ -107,9 +100,19 @@ begin
      variable display_enum : unsigned(3 downto 0);
      
    begin
-      -- Put 0's for pixels outside the bounds.
+      -- Put blank for pixels outside the bounds.
       if((h_count < x"90") or (h_count >= x"310") or (v_count < x"1F") or (v_count >= x"1FF")) then
          vga <= x"00";
+		
+		-- Adding a blue single pixel border around the spaces.
+		elsif( h_count = x"2C0" or v_count = x"1C3" or
+		       h_count = x"270" or v_count = x"187" or
+		       h_count = x"220" or v_count = x"14B" or
+		       h_count = x"1D0" or v_count = x"10F" or
+		       h_count = x"180" or v_count = x"0D3" or
+		       h_count = x"130" or v_count = x"097" or
+		       h_count = x"0E0" or v_count = x"05B" ) then
+		   vga <= "11000000";
 
       else
          -- Calculate the horizontal block offset
@@ -125,7 +128,7 @@ begin
             hori_off := "000011";
          elsif(h_count > x"130") then
             hori_off := "000010";
-         elsif(h_count > x"E0") then
+         elsif(h_count > x"0E0") then
             hori_off := "000001";
          else
             hori_off := "000000";
@@ -162,10 +165,12 @@ begin
          
          -- Put out the right color based on the enum.
          case display_enum is
-            when x"0"   => vga <= "00000111"; -- Red
-            when x"1"   => vga <= "00111000"; -- Green
+            when x"0"   => vga <= "00000111"; -- Red (No Play)
+            when x"1"   => vga <= "00100000"; -- Green (Board)
             when x"2"   => vga <= "11111111"; -- White
             when x"3"   => vga <= "00000000"; -- Black
+            when x"4"   => vga <= "11110111"; -- Light Pink (White Can Play)
+            when x"5"   => vga <= "00000001"; -- Dark Pink (Black Can Play)
             when others => vga <= "11000000"; -- Blue
          end case;
          
