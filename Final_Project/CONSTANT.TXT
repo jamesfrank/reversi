@@ -1,0 +1,4 @@
+Table of constant values and their specified constant labels.
+
+40  in_port_address_addr
+40  current_position_addr

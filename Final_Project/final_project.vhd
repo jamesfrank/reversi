@@ -8,17 +8,26 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-use work.all;
 
 entity final_project_top is port(
    clk50  : in  std_logic;
-   reset  : in  std_logic;
+   button : in  std_logic_vector(3 downto 0);
    vga    : out std_logic_vector(7 downto 0);
    vga_hs : out std_logic;
    vga_vs : out std_logic );
 end final_project_top;
 
 architecture behavioral of final_project_top is
+
+   alias reset : std_logic is button(3);
+	
+	-- Counters for debouncing each button.
+	signal clk_counter    : unsigned(19 downto 0);
+	signal ten_ms_en      : std_logic;
+   signal button_0_count : unsigned(2 downto 0);
+   signal button_2_count : unsigned(2 downto 0);
+   signal button_1_count : unsigned(2 downto 0);
+
    -- Setup the vga-related variables.
    signal h_count : unsigned(9 downto 0);
    signal v_count : unsigned(9 downto 0); 
@@ -27,31 +36,122 @@ architecture behavioral of final_project_top is
    -- Setup the game board arrays.
    type byte_array is array (integer range <>) of unsigned(7 downto 0);
    signal game_board : byte_array(63 downto 0);
-   signal current_position : unsigned(5 downto 0); 
+   signal current_position : unsigned(5 downto 0);
+
+  -- Signals between the picoblaze and it's rom.
+  signal address_signal       : std_logic_vector( 9 downto 0);
+  signal instruction_signal   : std_logic_vector(17 downto 0);
+   
+  -- Signals to/from the picoblaze.
+  signal port_id_signal       : std_logic_vector( 7 downto 0);
+  signal write_strobe_signal  : std_logic;
+  signal out_port_signal      : std_logic_vector( 7 downto 0);
+  signal in_port_signal       : std_logic_vector( 7 downto 0);
+  signal read_strobe_signal   : std_logic;
+  signal interrupt_signal     : std_logic;
+  signal interrupt_ack_signal : std_logic;
+  
+  -- Used to address the input port from the output port.
+  signal in_port_address      : unsigned( 7 downto 0);
 begin
 
-   -- Initialize the current_position to spot 0.
-   current_position <= "000000";
-
-   -- Setup a test game_board array.
+   -- Pico-blaze output handling code.
    process(clk50,reset)
    begin
       if(reset = '1') then
-		   -- Initialize to all green unplayables.
-         game_board     <= (others => x"01");
-			-- Add the 4 blocks in the middle.
-         game_board(27) <= x"02";
-         game_board(28) <= x"03";
-         game_board(35) <= x"03";
-         game_board(36) <= x"02";
-			-- Add the white playable spaces.
-         game_board(20) <= x"41";
-         game_board(29) <= x"41";
-         game_board(34) <= x"41";
-         game_board(43) <= x"41";
+         game_board <= (others => x"10");
+			in_port_address <= x"00";
 
       elsif(rising_edge(clk50)) then
-		   -- Do nothing.
+         if (write_strobe_signal = '1') then
+            if (port_id_signal(7 downto 6) = "00") then -- 00xxxxxx will change the game board
+				   game_board(to_integer(unsigned(port_id_signal(5 downto 0)))) <= unsigned(out_port_signal);
+				elsif port_id_signal = x"40" then -- x40 will change the address for the input port.
+				   in_port_address <= unsigned(out_port_signal);
+			   end if;
+         end if;
+      end if;
+   end process;
+
+   -- Pico-blaze input handling code.
+	process(in_port_address, game_board, current_position)
+	begin
+	   if (in_port_address(7 downto 6) = "00") then -- 00xxxxxx will get the game board
+	     in_port_signal <= std_logic_vector(game_board(to_integer(in_port_address(5 downto 0))));
+	   elsif (in_port_address = x"40") then -- x40 will get the current position
+	     in_port_signal <= "00" & std_logic_vector(current_position);
+		else
+		  in_port_signal <= x"00";
+      end if;
+	end process;
+
+   -- Generate the VGA enable signal (25 MHz)
+   process(clk50,reset)
+   begin
+      if(reset = '1') then
+         current_position <= (others => '0');
+			interrupt_signal <= '0';
+		   button_0_count <= (others => '0');
+		   button_1_count <= (others => '0');
+		   button_2_count <= (others => '0');
+
+      elsif(rising_edge(clk50)) then
+		   if( ten_ms_en = '1' ) then
+
+				-- Handle button 0 (increment current position)
+				if(button(0) = '0') then
+				   button_0_count <= (others => '0');
+				elsif( button_0_count = "100") then
+			      current_position <= current_position + 1;
+					button_0_count <= (others => '1');
+			   elsif( button_0_count /= "111") then
+				   button_0_count <= button_0_count + 1;
+				end if;
+				
+				-- Handle button 1 (decrement current position)
+				if(button(1) = '0') then
+				   button_1_count <= (others => '0');
+				elsif( button_1_count = x"4") then
+			      current_position <= current_position - 1;
+					button_1_count <= (others => '1');
+			   elsif( button_1_count /= "111") then
+				   button_1_count <= button_1_count + 1;
+				end if;
+
+				-- Handle button 2 (Play - Interrupt Picoblaze)
+				if(button(2) = '0') then
+				   button_2_count <= (others => '0');
+				elsif( button_2_count = x"4") then
+			      interrupt_signal <= '1';
+					button_2_count <= (others => '1');
+			   elsif( button_2_count /= "111") then
+				   button_2_count <= button_2_count + 1;
+				end if;
+
+			end if;
+
+         -- Clear the interrupt signal if we see an 'ack'
+			if interrupt_ack_signal  = '1' then
+			   interrupt_signal <= '0';
+			end if;
+
+      end if;
+   end process;
+
+   -- 10 milliseconds clock scaler code.
+   process(clk50, reset)
+   begin
+      if reset = '1' then -- Reset
+         clk_counter <= (others => '0');
+         ten_ms_en   <= '0';
+
+      elsif rising_edge(clk50) then
+         ten_ms_en <= '0';
+			clk_counter <= clk_counter + 1;
+         if clk_counter = 500000 then
+            ten_ms_en <= '1';
+            clk_counter <= (others => '0');
+         end if;
       end if;
    end process;
 
@@ -93,10 +193,10 @@ begin
    vga_vs <= '0' when (v_count < x"02") else '1';
 
    -- Put out the pixel.
-   process(h_count, v_count)
+   process(h_count, v_count, current_position)
      variable hori_off : unsigned(5 downto 0);
      variable vert_off : unsigned(5 downto 0);
-     variable block_num : unsigned(5 downto 0);
+     variable block_number : unsigned(5 downto 0);
      variable display_enum : unsigned(3 downto 0);
      
    begin
@@ -154,13 +254,13 @@ begin
          end if;
          
          -- Combine the vertical and horizontal into the block number (between 0 & 63).
-         block_num := vert_off + hori_off;
+         block_number := vert_off + hori_off;
          
          -- Grab the enum from the game board based on the current position.
-         if(current_position = block_num) then
-            display_enum := game_board(to_integer(block_num))(7 downto 4);
+         if (current_position = block_number) then
+            display_enum := game_board(to_integer(block_number))(7 downto 4);
          else 
-            display_enum := game_board(to_integer(block_num))(3 downto 0);
+            display_enum := game_board(to_integer(block_number))(3 downto 0);
          end if;
          
          -- Put out the right color based on the enum.
@@ -176,5 +276,25 @@ begin
          
       end if;
    end process;
+
+   -- Declaration for the picoblaze.
+   processor: entity kcpsm3
+   port map( address => address_signal,
+             instruction => instruction_signal,
+             port_id => port_id_signal,
+             write_strobe => write_strobe_signal,
+             out_port => out_port_signal,
+             read_strobe => read_strobe_signal,
+             in_port => in_port_signal,
+             interrupt => interrupt_signal,
+             interrupt_ack => interrupt_ack_signal,
+             reset => reset,
+             clk => clk50 );
+
+   -- Declaration for the picoblaze's rom.
+   program: entity finpropb
+   port map( address => address_signal,
+             instruction => instruction_signal,
+             clk => clk50 );
 
 end Behavioral;

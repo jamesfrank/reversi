@@ -1,1 +1,3 @@
+vhdl work "kcpsm3.vhd"
+vhdl work "FINPROPB.VHD"
 vhdl work "Final_Project.vhd"

@@ -1,7 +1,11 @@
 NET "clk50" LOC = "B8";
 
-NET "reset" LOC = "B18";
-NET "reset" CLOCK_DEDICATED_ROUTE = FALSE;
+NET "button<3>" 		LOC = "H13";
+NET "button<2>" 		LOC = "E18";
+NET "button<1>" 		LOC = "D18";
+NET "button<0>" 		LOC = "B18";
+
+NET "button<3>" CLOCK_DEDICATED_ROUTE = FALSE;
 
 NET "vga<0>" LOC = "R9"; # Red 0
 NET "vga<1>" LOC = "T8"; # Red 1
