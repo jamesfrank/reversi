@@ -10,14 +10,34 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity final_project_top is port(
-   clk50  : in  std_logic;
-   button : in  std_logic_vector(3 downto 0);
-   vga    : out std_logic_vector(7 downto 0);
-   vga_hs : out std_logic;
-   vga_vs : out std_logic );
+   clk50    : in  std_logic;
+   button   : in  std_logic_vector(3 downto 0);
+	ps2_data : in  std_logic;
+	ps2_clk  : in  std_logic;
+   vga      : out std_logic_vector(7 downto 0);
+   vga_hs   : out std_logic;
+   vga_vs   : out std_logic );
 end final_project_top;
 
 architecture behavioral of final_project_top is
+
+	-- Declare PS2 keyboard driver.
+   component ps2_keyboard is port (
+	   reset     : in  std_logic;
+		clk       : in  std_logic;
+		ps2_data  : in  std_logic;
+		ps2_clk   : in  std_logic;
+		available : out std_logic;
+		out_byte  : out std_logic_vector(7 downto 0)
+    );
+	end component ps2_keyboard;
+	
+	-- Declare keyboard constants.
+	constant ARROW_U	: std_logic_vector(7 downto 0) := x"75";
+	constant ARROW_R	: std_logic_vector(7 downto 0) := x"74";
+	constant ARROW_D	: std_logic_vector(7 downto 0) := x"72";
+	constant ARROW_L	: std_logic_vector(7 downto 0) := x"6B";
+	constant ENTER	   : std_logic_vector(7 downto 0) := x"5A";
 
    alias reset : std_logic is button(3);
 	
@@ -38,22 +58,37 @@ architecture behavioral of final_project_top is
    signal game_board : byte_array(63 downto 0);
    signal current_position : unsigned(5 downto 0);
 
-  -- Signals between the picoblaze and it's rom.
-  signal address_signal       : std_logic_vector( 9 downto 0);
-  signal instruction_signal   : std_logic_vector(17 downto 0);
-   
-  -- Signals to/from the picoblaze.
-  signal port_id_signal       : std_logic_vector( 7 downto 0);
-  signal write_strobe_signal  : std_logic;
-  signal out_port_signal      : std_logic_vector( 7 downto 0);
-  signal in_port_signal       : std_logic_vector( 7 downto 0);
-  signal read_strobe_signal   : std_logic;
-  signal interrupt_signal     : std_logic;
-  signal interrupt_ack_signal : std_logic;
+	-- Signals between the picoblaze and it's rom.
+	signal address_signal       : std_logic_vector( 9 downto 0);
+	signal instruction_signal   : std_logic_vector(17 downto 0);
+
+	-- Signals to/from the picoblaze.
+	signal port_id_signal       : std_logic_vector( 7 downto 0);
+	signal write_strobe_signal  : std_logic;
+	signal out_port_signal      : std_logic_vector( 7 downto 0);
+	signal in_port_signal       : std_logic_vector( 7 downto 0);
+	signal read_strobe_signal   : std_logic;
+	signal interrupt_signal     : std_logic;
+	signal interrupt_ack_signal : std_logic;
+
+	-- Signals for keyboard.
+	signal keyboard_data_available : std_logic;
+	signal keyboard_data_out       : std_logic_vector(7 downto 0);
   
   -- Used to address the input port from the output port.
   signal in_port_address      : unsigned( 7 downto 0);
 begin
+
+	-- Keyboard interface
+	keyboard : ps2_keyboard 
+		port map(
+			reset,
+			clk50,
+			ps2_data,
+			ps2_clk,
+			keyboard_data_available,
+			keyboard_data_out
+	 );
 
    -- Pico-blaze output handling code.
    process(clk50,reset)
@@ -87,6 +122,7 @@ begin
 
    -- Generate the VGA enable signal (25 MHz)
    process(clk50,reset)
+		variable keyup : std_logic := '0';
    begin
       if(reset = '1') then
          current_position <= (others => '0');
@@ -94,8 +130,35 @@ begin
 		   button_0_count <= (others => '0');
 		   button_1_count <= (others => '0');
 		   button_2_count <= (others => '0');
+			keyup := '0';
 
       elsif(rising_edge(clk50)) then
+			-- Handle keyboard input if available
+			if( keyboard_data_available = '1' ) then
+				-- Ignore repeated keys
+				if( keyboard_data_out = x"E0" ) then
+					-- Beginning of BREAK code, prepare to ignore next input
+					keyup := '1';
+				elsif( keyup = '1' ) then
+					-- This is a BREAK code, so ignore it
+					keyup := '0';
+				
+				-- Handle navigational keys
+				elsif( keyboard_data_out = ARROW_R ) then
+					current_position <= current_position + 1;
+				elsif( keyboard_data_out = ARROW_L ) then
+					current_position <= current_position - 1;
+				elsif( keyboard_data_out = ARROW_D ) then
+					current_position <= current_position + 8;
+				elsif( keyboard_data_out = ARROW_U ) then
+					current_position <= current_position - 8;
+				
+				-- Handle play keys
+				elsif( keyboard_data_out = ENTER ) then
+					interrupt_signal <= '1';
+				end if;
+			end if;
+		
 		   if( ten_ms_en = '1' ) then
 
 				-- Handle button 0 (increment current position)
