@@ -1,0 +1,8 @@
+INTSTYLE=ise
+INFILE=C:\Users\Shutter\Documents\GitHub\Reversi\Prototypes\Mouse\MouseRefComp.ncd
+OUTFILE=C:\Users\Shutter\Documents\GitHub\Reversi\Prototypes\Mouse\MouseRefComp.bit
+FAMILY=Spartan3E
+PART=xc3s500e-4fg320
+WORKINGDIR=C:\Users\Shutter\Documents\GitHub\Reversi\Prototypes\Mouse
+LICENSE=WebPack
+USER_INFO=210793968_0_0_019
