@@ -1,49 +1,121 @@
  ;-----------------------------------------------------------------------
  ; FPGA Design Using VHDL
- ; Lab 7 - Picoblaze Assembly Code
+ ; Final Project
  ;
- ; Author: Eric A. Beales
- ; Date:   12-Nov-2013
+ ; Authors: Eric Beales &  James Frank
+ ; Date:    25-Nov-2013
  ;-----------------------------------------------------------------------
 
-             CONSTANT in_port_address_addr,  40
-             CONSTANT current_position_addr, 40
-			 
-      start:
+             CONSTANT addr_current_position, 40
 
-             ; Set everything to 0x01 (or green unplayable)
+             CONSTANT space_white_can_play, 41
+             CONSTANT space_black_can_play, 51
+             CONSTANT space_white, 02
+             CONSTANT space_black, 03
+			 CONSTANT space_board, 01
+
+			 NAMEREG sF, current_player
+			 
+ ;-----------------------------------------------------------------------
+ ; Initialization code
+ ;-----------------------------------------------------------------------
+      start:
+             ; Set everything to a board space
 			 LOAD s0, 00
-			 LOAD s1, 01
+			 LOAD s1, space_board
  clear_loop: OUTPUT s1, (s0)
 			 add s0, 01
-			 LOAD s2, s0
-			 sub s2, 40 ; Check if we reached the last space.
+			 LOAD s2, 40
+			 SUB s0, s2
              JUMP NZ, clear_loop
 			 
 			 ; Add the four blocks in the middle.
-			 LOAD s1, 02
+			 LOAD s1, space_white
 			 OUTPUT s1, 1B
 			 OUTPUT s1, 24
-			 LOAD s1, 03
+			 LOAD s1, space_black
 			 OUTPUT s1, 1C
 			 OUTPUT s1, 23
 			 
-			 ; Add the white-playable blocks.
-			 LOAD s1, 41
-			 OUTPUT s1, 14
-			 OUTPUT s1, 1D
-			 OUTPUT s1, 22
-			 OUTPUT s1, 2B
+			 ; Set the current player to white.
+			 LOAD current_player, 00
+
+			 CALL set_next_plays
 
 			 ENABLE INTERRUPT
 
  do_nothing: JUMP do_nothing ; Wait here until interrupted.
 
+
+ ;-----------------------------------------------------------------------
+ ; Calculate next plays
+ ;-----------------------------------------------------------------------
+ 
+ set_next_plays:
+			 LOAD s0, 00
+
+ next_play_loop:
+             ; If it isn't green, it is unplayable. 
+			 LOAD s3, 00
+             INPUT s2, (s0)
+			 AND s2, F0
+			 SUB s2, 01
+			 JUMP NZ, done_testing
 			 
+			 ; Check each direction
+             CALL test_left
+             CALL test_down
+             CALL test_right
+             CALL test_up
+             CALL test_upleft
+             CALL test_upright
+			 CALL test_downleft
+			 CALL test_downright             
+
+ done_testing:
+			 ; Set to not playable.
+             INPUT s2, (s0)
+			 AND s2, 0F
+
+             OR s3, 00
+			 JUMP Z, do_set
+			 
+			 ; Set to 40 (white can play if current player is 0)
+			 OR s2, 40
+			 OR current_player, 00
+			 JUMP NZ, do_set
+			 
+			 ; Set to 40 (black can play if the current player is not 0)
+			 OR s2, 50
+
+      do_set:
+			 OUTPUT s2, (s0)
+
+			 ADD s0, 01
+			 LOAD s2, 40
+			 SUB s0, s2
+             JUMP NZ, next_play_loop
+ 			 return
+
+
+ ;-----------------------------------------------------------------------
+ ; Test functions (use s4-s6) will set s3 if its playable.  
+ ;-----------------------------------------------------------------------
+ test_down:
+             
+ 			 return
+ ;-----------------------------------------------------------------------
+ ; Play a piece
+ ;-----------------------------------------------------------------------
+ 
+ play:
+             CALL set_next_plays
+ 			 return
+ 
  ;-----------------------------------------------------------------------
  ; Interrupt code
  ;-----------------------------------------------------------------------
-int_routine: ; Do nothing.
+int_routine: CALL play
              RETURNI ENABLE
 
              ADDRESS 3FF            ; Set interrupt vector

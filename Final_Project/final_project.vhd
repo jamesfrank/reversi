@@ -12,8 +12,8 @@ use ieee.numeric_std.all;
 entity final_project_top is port(
    clk50    : in  std_logic;
    button   : in  std_logic_vector(3 downto 0);
-	ps2_data : in  std_logic;
-	ps2_clk  : in  std_logic;
+   ps2_data : in  std_logic;
+   ps2_clk  : in  std_logic;
    vga      : out std_logic_vector(7 downto 0);
    vga_hs   : out std_logic;
    vga_vs   : out std_logic );
@@ -21,29 +21,29 @@ end final_project_top;
 
 architecture behavioral of final_project_top is
 
-	-- Declare PS2 keyboard driver.
+   -- Declare PS2 keyboard driver.
    component ps2_keyboard is port (
-	   reset     : in  std_logic;
-		clk       : in  std_logic;
-		ps2_data  : in  std_logic;
-		ps2_clk   : in  std_logic;
-		available : out std_logic;
-		out_byte  : out std_logic_vector(7 downto 0)
+      reset     : in  std_logic;
+      clk       : in  std_logic;
+      ps2_data  : in  std_logic;
+      ps2_clk   : in  std_logic;
+      available : out std_logic;
+      out_byte  : out std_logic_vector(7 downto 0)
     );
-	end component ps2_keyboard;
-	
-	-- Declare keyboard constants.
-	constant ARROW_U	: std_logic_vector(7 downto 0) := x"75";
-	constant ARROW_R	: std_logic_vector(7 downto 0) := x"74";
-	constant ARROW_D	: std_logic_vector(7 downto 0) := x"72";
-	constant ARROW_L	: std_logic_vector(7 downto 0) := x"6B";
-	constant ENTER	   : std_logic_vector(7 downto 0) := x"5A";
+   end component ps2_keyboard;
+   
+   -- Declare keyboard constants.
+   constant ARROW_U   : std_logic_vector(7 downto 0) := x"75";
+   constant ARROW_R   : std_logic_vector(7 downto 0) := x"74";
+   constant ARROW_D   : std_logic_vector(7 downto 0) := x"72";
+   constant ARROW_L   : std_logic_vector(7 downto 0) := x"6B";
+   constant ENTER      : std_logic_vector(7 downto 0) := x"5A";
 
    alias reset : std_logic is button(3);
-	
-	-- Counters for debouncing each button.
-	signal clk_counter    : unsigned(19 downto 0);
-	signal ten_ms_en      : std_logic;
+   
+   -- Counters for debouncing each button.
+   signal clk_counter    : unsigned(19 downto 0);
+   signal ten_ms_en      : std_logic;
    signal button_0_count : unsigned(2 downto 0);
    signal button_2_count : unsigned(2 downto 0);
    signal button_1_count : unsigned(2 downto 0);
@@ -58,145 +58,138 @@ architecture behavioral of final_project_top is
    signal game_board : byte_array(63 downto 0);
    signal current_position : unsigned(5 downto 0);
 
-	-- Signals between the picoblaze and it's rom.
-	signal address_signal       : std_logic_vector( 9 downto 0);
-	signal instruction_signal   : std_logic_vector(17 downto 0);
+   -- Signals between the picoblaze and it's rom.
+   signal address_signal       : std_logic_vector( 9 downto 0);
+   signal instruction_signal   : std_logic_vector(17 downto 0);
 
-	-- Signals to/from the picoblaze.
-	signal port_id_signal       : std_logic_vector( 7 downto 0);
-	signal write_strobe_signal  : std_logic;
-	signal out_port_signal      : std_logic_vector( 7 downto 0);
-	signal in_port_signal       : std_logic_vector( 7 downto 0);
-	signal read_strobe_signal   : std_logic;
-	signal interrupt_signal     : std_logic;
-	signal interrupt_ack_signal : std_logic;
+   -- Signals to/from the picoblaze.
+   signal port_id_signal       : std_logic_vector( 7 downto 0);
+   signal write_strobe_signal  : std_logic;
+   signal out_port_signal      : std_logic_vector( 7 downto 0);
+   signal in_port_signal       : std_logic_vector( 7 downto 0);
+   signal read_strobe_signal   : std_logic;
+   signal interrupt_signal     : std_logic;
+   signal interrupt_ack_signal : std_logic;
 
-	-- Signals for keyboard.
-	signal keyboard_data_available : std_logic;
-	signal keyboard_data_out       : std_logic_vector(7 downto 0);
-  
-  -- Used to address the input port from the output port.
-  signal in_port_address      : unsigned( 7 downto 0);
+   -- Signals for keyboard.
+   signal keyboard_data_available : std_logic;
+   signal keyboard_data_out       : std_logic_vector(7 downto 0);
 begin
 
-	-- Keyboard interface
-	keyboard : ps2_keyboard 
-		port map(
-			reset,
-			clk50,
-			ps2_data,
-			ps2_clk,
-			keyboard_data_available,
-			keyboard_data_out
-	 );
+   -- Keyboard interface
+   keyboard : ps2_keyboard 
+      port map(
+         reset,
+         clk50,
+         ps2_data,
+         ps2_clk,
+         keyboard_data_available,
+         keyboard_data_out
+    );
 
    -- Pico-blaze output handling code.
    process(clk50,reset)
    begin
       if(reset = '1') then
          game_board <= (others => x"10");
-			in_port_address <= x"00";
-
       elsif(rising_edge(clk50)) then
          if (write_strobe_signal = '1') then
             if (port_id_signal(7 downto 6) = "00") then -- 00xxxxxx will change the game board
-				   game_board(to_integer(unsigned(port_id_signal(5 downto 0)))) <= unsigned(out_port_signal);
-				elsif port_id_signal = x"40" then -- x40 will change the address for the input port.
-				   in_port_address <= unsigned(out_port_signal);
-			   end if;
+               game_board(to_integer(unsigned(port_id_signal(5 downto 0)))) <= unsigned(out_port_signal);
+            end if;
          end if;
       end if;
    end process;
 
    -- Pico-blaze input handling code.
-	process(in_port_address, game_board, current_position)
-	begin
-	   if (in_port_address(7 downto 6) = "00") then -- 00xxxxxx will get the game board
-	     in_port_signal <= std_logic_vector(game_board(to_integer(in_port_address(5 downto 0))));
-	   elsif (in_port_address = x"40") then -- x40 will get the current position
-	     in_port_signal <= "00" & std_logic_vector(current_position);
-		else
-		  in_port_signal <= x"00";
+   process(port_id_signal, game_board, current_position)
+   begin
+      if (port_id_signal(7 downto 6) = "00") then -- 00xxxxxx will get the game board
+        in_port_signal <= std_logic_vector(game_board(to_integer(unsigned(port_id_signal(5 downto 0)))));
+      elsif (port_id_signal = x"40") then -- x40 will get the current position
+        in_port_signal <= "00" & std_logic_vector(current_position);
+      else
+        in_port_signal <= x"00";
       end if;
-	end process;
+   end process;
 
    -- Generate the VGA enable signal (25 MHz)
    process(clk50,reset)
-		variable keyup : std_logic := '0';
+      variable keyup : std_logic := '0';
    begin
       if(reset = '1') then
          current_position <= (others => '0');
-			interrupt_signal <= '0';
-		   button_0_count <= (others => '0');
-		   button_1_count <= (others => '0');
-		   button_2_count <= (others => '0');
-			keyup := '0';
+           interrupt_signal <= '0';
+         button_0_count <= (others => '0');
+         button_1_count <= (others => '0');
+         button_2_count <= (others => '0');
+         keyup := '0';
 
       elsif(rising_edge(clk50)) then
-			-- Handle keyboard input if available
-			if( keyboard_data_available = '1' ) then
-				-- Ignore repeated keys
-				if( keyboard_data_out = x"E0" ) then
-					-- Beginning of BREAK code, prepare to ignore next input
-					keyup := '1';
-				elsif( keyup = '1' ) then
-					-- This is a BREAK code, so ignore it
-					keyup := '0';
-				
-				-- Handle navigational keys
-				elsif( keyboard_data_out = ARROW_R ) then
-					current_position <= current_position + 1;
-				elsif( keyboard_data_out = ARROW_L ) then
-					current_position <= current_position - 1;
-				elsif( keyboard_data_out = ARROW_D ) then
-					current_position <= current_position + 8;
-				elsif( keyboard_data_out = ARROW_U ) then
-					current_position <= current_position - 8;
-				
-				-- Handle play keys
-				elsif( keyboard_data_out = ENTER ) then
-					interrupt_signal <= '1';
-				end if;
-			end if;
-		
-		   if( ten_ms_en = '1' ) then
+         -- Handle keyboard input if available
+         if( keyboard_data_available = '1' ) then
+            -- Ignore repeated keys
+            if( keyboard_data_out = x"E0" ) then
+               -- Beginning of BREAK code, prepare to ignore next input
+               keyup := '1';
+            elsif( keyup = '1' ) then
+               -- This is a BREAK code, so ignore it
+               keyup := '0';
+            
+            -- Handle navigational keys
+            elsif( keyboard_data_out = ARROW_R ) then
+               current_position <= current_position + 1;
+            elsif( keyboard_data_out = ARROW_L ) then
+               current_position <= current_position - 1;
+            elsif( keyboard_data_out = ARROW_D ) then
+               current_position <= current_position + 8;
+            elsif( keyboard_data_out = ARROW_U ) then
+               current_position <= current_position - 8;
+            
+            -- Handle play keys
+            elsif( keyboard_data_out = ENTER ) then
+               interrupt_signal <= '1';
+            end if;
+         end if;
 
-				-- Handle button 0 (increment current position)
-				if(button(0) = '0') then
-				   button_0_count <= (others => '0');
-				elsif( button_0_count = "100") then
-			      current_position <= current_position + 1;
-					button_0_count <= (others => '1');
-			   elsif( button_0_count /= "111") then
-				   button_0_count <= button_0_count + 1;
-				end if;
-				
-				-- Handle button 1 (decrement current position)
-				if(button(1) = '0') then
-				   button_1_count <= (others => '0');
-				elsif( button_1_count = x"4") then
-			      current_position <= current_position - 1;
-					button_1_count <= (others => '1');
-			   elsif( button_1_count /= "111") then
-				   button_1_count <= button_1_count + 1;
-				end if;
+         if( ten_ms_en = '1' ) then
 
-				-- Handle button 2 (Play - Interrupt Picoblaze)
-				if(button(2) = '0') then
-				   button_2_count <= (others => '0');
-				elsif( button_2_count = x"4") then
-			      interrupt_signal <= '1';
-					button_2_count <= (others => '1');
-			   elsif( button_2_count /= "111") then
-				   button_2_count <= button_2_count + 1;
-				end if;
+            -- Handle button 0 (increment current position)
+            if(button(0) = '0') then
+               button_0_count <= (others => '0');
+            elsif( button_0_count = "100") then
+               current_position <= current_position + 1;
+               button_0_count <= (others => '1');
+            elsif( button_0_count /= "111") then
+               button_0_count <= button_0_count + 1;
+            end if;
+            
+            -- Handle button 1 (decrement current position)
+            if(button(1) = '0') then
+               button_1_count <= (others => '0');
+            elsif( button_1_count = x"4") then
+               current_position <= current_position - 1;
+               button_1_count <= (others => '1');
+            elsif( button_1_count /= "111") then
+               button_1_count <= button_1_count + 1;
+            end if;
 
-			end if;
+            -- Handle button 2 (Play - Interrupt Picoblaze)
+            if(button(2) = '0') then
+               button_2_count <= (others => '0');
+            elsif( button_2_count = x"4") then
+               interrupt_signal <= '1';
+               button_2_count <= (others => '1');
+            elsif( button_2_count /= "111") then
+               button_2_count <= button_2_count + 1;
+            end if;
+
+         end if;
 
          -- Clear the interrupt signal if we see an 'ack'
-			if interrupt_ack_signal  = '1' then
-			   interrupt_signal <= '0';
-			end if;
+         if interrupt_ack_signal  = '1' then
+            interrupt_signal <= '0';
+         end if;
 
       end if;
    end process;
@@ -210,7 +203,7 @@ begin
 
       elsif rising_edge(clk50) then
          ten_ms_en <= '0';
-			clk_counter <= clk_counter + 1;
+         clk_counter <= clk_counter + 1;
          if clk_counter = 500000 then
             ten_ms_en <= '1';
             clk_counter <= (others => '0');
@@ -266,16 +259,16 @@ begin
       -- Put blank for pixels outside the bounds.
       if((h_count < x"90") or (h_count >= x"310") or (v_count < x"1F") or (v_count >= x"1FF")) then
          vga <= x"00";
-		
-		-- Adding a blue single pixel border around the spaces.
-		elsif( h_count = x"2C0" or v_count = x"1C3" or
-		       h_count = x"270" or v_count = x"187" or
-		       h_count = x"220" or v_count = x"14B" or
-		       h_count = x"1D0" or v_count = x"10F" or
-		       h_count = x"180" or v_count = x"0D3" or
-		       h_count = x"130" or v_count = x"097" or
-		       h_count = x"0E0" or v_count = x"05B" ) then
-		   vga <= "11000000";
+      
+      -- Adding a blue single pixel border around the spaces.
+      elsif( h_count = x"2C0" or v_count = x"1C3" or
+             h_count = x"270" or v_count = x"187" or
+             h_count = x"220" or v_count = x"14B" or
+             h_count = x"1D0" or v_count = x"10F" or
+             h_count = x"180" or v_count = x"0D3" or
+             h_count = x"130" or v_count = x"097" or
+             h_count = x"0E0" or v_count = x"05B" ) then
+         vga <= "11000000";
 
       else
          -- Calculate the horizontal block offset
