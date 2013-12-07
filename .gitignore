@@ -73,3 +73,12 @@ webtalk_pn.xml
 netlist.lst
 smartpreview.twr
 cst.xbcd
+
+# Extra Junk
+PASS*.DAT
+CONSTANT.TXT
+LABELS.TXT
+FINPROPB.COE
+FINPROPB.PSM
+FINPROPB.FMT
+FINPROPB.LOG
