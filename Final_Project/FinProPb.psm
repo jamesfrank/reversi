@@ -12,111 +12,714 @@
              CONSTANT space_black_can_play, 51
              CONSTANT space_white, 02
              CONSTANT space_black, 03
-			 CONSTANT space_board, 01
+             CONSTANT space_board, 01
+             CONSTANT pure_white, 22
+             CONSTANT pure_black, 33
 
-			 NAMEREG sF, current_player
-			 
+             NAMEREG s5, has_any_plays
+             NAMEREG s6, current_player
+             NAMEREG s7, current_position
+             NAMEREG s8, is_playable
+             NAMEREG s9, board_pos
+             NAMEREG sA, current_player_color
+             NAMEREG sB, opposite_player_color
+             NAMEREG sC, current_player_can_play_color
+             NAMEREG sD, temp_color
+             NAMEREG sE, current_test_position
+             NAMEREG sF, current_test_found_opposite_color
+             
  ;-----------------------------------------------------------------------
  ; Initialization code
  ;-----------------------------------------------------------------------
       start:
              ; Set everything to a board space
-			 LOAD s0, 00
-			 LOAD s1, space_board
- clear_loop: OUTPUT s1, (s0)
-			 add s0, 01
-			 LOAD s2, 40
-			 SUB s0, s2
-             JUMP NZ, clear_loop
-			 
-			 ; Add the four blocks in the middle.
-			 LOAD s1, space_white
-			 OUTPUT s1, 1B
-			 OUTPUT s1, 24
-			 LOAD s1, space_black
-			 OUTPUT s1, 1C
-			 OUTPUT s1, 23
-			 
-			 ; Set the current player to white.
-			 LOAD current_player, 00
+             LOAD board_pos, 00
+             LOAD temp_color, space_board
+   start_l1: OUTPUT temp_color, (board_pos)
+             ADD board_pos, 01
+             COMPARE board_pos, 40
+             JUMP NZ, start_l1
+             
+             ; Add the four blocks in the middle.
+             LOAD temp_color, space_white
+             OUTPUT temp_color, 1B
+             OUTPUT temp_color, 24
+             LOAD temp_color, space_black
+             OUTPUT temp_color, 1C
+             OUTPUT temp_color , 23
+             
+             ; Set the current player to white.
+             LOAD current_player, 00
 
-			 CALL set_next_plays
+             CALL set_next_plays
 
-			 ENABLE INTERRUPT
+             ENABLE INTERRUPT
 
  do_nothing: JUMP do_nothing ; Wait here until interrupted.
 
+ ;-----------------------------------------------------------------------
+ ; Setup current player colors.
+ ;-----------------------------------------------------------------------
+ set_current_player_colors:
+         
+		  ; Set everything to white player colors.
+          LOAD current_player_color, space_white
+          LOAD opposite_player_color, space_black
+          LOAD current_player_can_play_color, space_white_can_play
 
+		  ; Return if the current player is white.
+          COMPARE current_player, 00
+          JUMP Z, set_current_player_colors_return
+
+          ; Set everything to black player colors.
+          LOAD current_player_color, space_black
+          LOAD opposite_player_color, space_white
+          LOAD current_player_can_play_color, space_black_can_play
+
+set_current_player_colors_return:
+          return
+ 
+ ;-----------------------------------------------------------------------
+ ; Play a piece
+ ;-----------------------------------------------------------------------
+ play:
+             ; Get the information about the current position
+             INPUT board_pos, addr_current_position
+             CALL set_current_player_colors
+ 
+             ; Check to see if this was a playable spot.
+             INPUT temp_color, (board_pos)
+             COMPARE temp_color, current_player_can_play_color
+             JUMP NZ, play_ret
+             
+			 ; Play on this spot.
+             OUTPUT current_player_color, (board_pos)
+ 
+             ; Try playing in each direction.
+             CALL play_right
+             CALL play_left
+             CALL play_down
+             CALL play_up
+             CALL play_upleft
+             CALL play_upright
+             CALL play_downleft
+             CALL play_downright
+
+			 ; Switch players & update the board
+             XOR current_player, FF
+             CALL set_next_plays
+			 
+			 ; Validate the player can play
+			 COMPARE has_any_plays, 00
+			 JUMP NZ, play_ret
+			 
+			 ; Switch players & update the board
+             XOR current_player, FF
+             CALL set_next_plays
+			 
+			 ; Validate the other player can play
+			 COMPARE has_any_plays, 00
+			 JUMP NZ, play_ret
+			 
+			 ; If nobody can play, choose a winner.
+			 CALL choose_winner
+
+   play_ret: RETURNI ENABLE
+
+ ;-----------------------------------------------------------------------
+ ; Determine the winner and set the board to that color
+ ;-----------------------------------------------------------------------
+ choose_winner:
+			 LOAD s3, 00 ; white count
+			 LOAD s4, 00 ; black count
+	         
+			 ; Loop through the board to determine if there is more black or white.
+             LOAD board_pos, 00
+   color_count_loop:
+            INPUT temp_color, (board_pos)
+            AND temp_color, 0F
+			COMPARE s0, space_white
+			JUMP Z, add_to_white
+			COMPARE s0, space_black
+			JUMP Z, add_to_black
+			JUMP done_adding
+   add_to_white:
+            ADD s3, 01
+            JUMP done_adding
+   add_to_black:
+            ADD s4, 01
+   done_adding:
+             ADD board_pos, 01
+             COMPARE board_pos, 40
+             JUMP NZ, color_count_loop
+
+			; Check which is bigger, black or white.
+            LOAD temp_color, pure_white
+			SUB s4, s3
+			JUMP C, white_won 
+            LOAD temp_color, pure_black
+    white_won:
+			 
+	         ; Set the whole board to the winner
+             LOAD board_pos, 00
+   color_board_loop:
+             OUTPUT temp_color, (board_pos)
+             ADD board_pos, 01
+             COMPARE board_pos, 40
+             JUMP NZ, color_board_loop
+	
+             ; Just quit until we get a reset.
+             RETURNI DISABLE
+ 
+ 
  ;-----------------------------------------------------------------------
  ; Calculate next plays
  ;-----------------------------------------------------------------------
  
  set_next_plays:
-			 LOAD s0, 00
+             CALL set_current_player_colors
+			 LOAD has_any_plays, 00
 
- next_play_loop:
-             ; If it isn't green, it is unplayable. 
-			 LOAD s3, 00
-             INPUT s2, (s0)
-			 AND s2, F0
-			 SUB s2, 01
-			 JUMP NZ, done_testing
-			 
-			 ; Check each direction
+			 ; Loop from 0x00 to 0x3F
+			 LOAD board_pos, FF
+set_next_plays_loop:
+             COMPARE board_pos, 3F
+			 JUMP Z, set_next_plays_return
+             ADD board_pos, 01
+
+             ; Set the space to unplayable.
+             INPUT temp_color, (board_pos)
+             AND temp_color, 0F
+			 OUTPUT temp_color, (board_pos)
+
+			 ; If it isn't a board space, move on.
+             COMPARE temp_color, space_board
+             JUMP NZ, set_next_plays_loop
+
+             ; Check if any direction is playable
+			 LOAD is_playable, 00
              CALL test_left
              CALL test_down
              CALL test_right
              CALL test_up
              CALL test_upleft
              CALL test_upright
-			 CALL test_downleft
-			 CALL test_downright             
+             CALL test_downleft
+             CALL test_downright
 
- done_testing:
-			 ; Set to not playable.
-             INPUT s2, (s0)
-			 AND s2, 0F
-
-             OR s3, 00
-			 JUMP Z, do_set
+			 ; If its not playable move on.
+             COMPARE is_playable, 00
+			 JUMP Z, set_next_plays_loop
 			 
-			 ; Set to 40 (white can play if current player is 0)
-			 OR s2, 40
-			 OR current_player, 00
-			 JUMP NZ, do_set
-			 
-			 ; Set to 40 (black can play if the current player is not 0)
-			 OR s2, 50
+			 ; If it's playable set the 'can play' color
+			 OUTPUT current_player_can_play_color, (board_pos)
+			 LOAD has_any_plays, FF
 
-      do_set:
-			 OUTPUT s2, (s0)
+			 ; Move on.
+			 JUMP set_next_plays_loop
 
-			 ADD s0, 01
-			 LOAD s2, 40
-			 SUB s0, s2
-             JUMP NZ, next_play_loop
- 			 return
+set_next_plays_return:
+              return
 
 
  ;-----------------------------------------------------------------------
- ; Test functions (use s4-s6) will set s3 if its playable.  
+ ; Test functions (See if a spot is playable)
  ;-----------------------------------------------------------------------
+
+ ; ------------------ TEST LEFT -----------------------------------------
+ test_left:
+              LOAD current_test_found_opposite_color, 00
+			  LOAD current_test_position, board_pos
+
+ test_left_loop:
+              SUB current_test_position, 01
+			  
+			  ; Check if we fell off the left of the board.
+			  LOAD s0, current_test_position
+			  AND s0, 07
+			  COMPARE s0, 07
+			  JUMP Z, test_left_return
+
+			  INPUT temp_color, (current_test_position)
+			  AND temp_color, 0F
+			  COMPARE temp_color, opposite_player_color
+			  JUMP NZ, test_left_opp_test_fail
+			  
+			  LOAD current_test_found_opposite_color, FF
+			  JUMP test_left_loop
+
+ test_left_opp_test_fail:
+
+              COMPARE temp_color, current_player_color
+			  JUMP NZ, test_left_return
+			  COMPARE current_test_found_opposite_color, 00
+			  JUMP Z, test_left_return
+              
+              LOAD is_playable, FF
+
+ test_left_return:
+              return
+ 
+ ; ------------------ TEST RIGHT ----------------------------------------
+
+ test_right:
+              LOAD current_test_found_opposite_color, 00
+			  LOAD current_test_position, board_pos
+
+ test_right_loop:
+              ADD current_test_position, 01
+			  
+			  ; Check if we fell off the right of the board.
+			  LOAD s0, current_test_position
+			  AND s0, 07
+			  COMPARE s0, 00
+			  JUMP Z, test_right_return
+			  
+			  INPUT temp_color, (current_test_position)
+			  AND temp_color, 0F
+			  COMPARE temp_color, opposite_player_color
+			  JUMP NZ, test_right_opp_test_fail
+			  
+			  LOAD current_test_found_opposite_color, FF
+			  JUMP test_right_loop
+
+ test_right_opp_test_fail:
+
+              COMPARE temp_color, current_player_color
+			  JUMP NZ, test_right_return
+			  COMPARE current_test_found_opposite_color, 00
+			  JUMP Z, test_right_return
+              
+              LOAD is_playable, FF
+
+ test_right_return:
+              return
+
+ ; ------------------ TEST UP -------------------------------------
+
+ test_up:
+              LOAD current_test_found_opposite_color, 00
+			  LOAD current_test_position, board_pos
+
+ test_up_loop:
+              SUB current_test_position, 08
+			  
+			  ; Check if we fell off the top of the board.
+			  LOAD s0, current_test_position
+			  AND s0, 38
+			  COMPARE s0, 38
+			  JUMP Z, test_up_return
+			  
+			  INPUT temp_color, (current_test_position)
+			  AND temp_color, 0F
+			  COMPARE temp_color, opposite_player_color
+			  JUMP NZ, test_up_opp_test_fail
+			  
+			  LOAD current_test_found_opposite_color, FF
+			  JUMP test_up_loop
+
+ test_up_opp_test_fail:
+
+              COMPARE temp_color, current_player_color
+			  JUMP NZ, test_up_return
+			  COMPARE current_test_found_opposite_color, 00
+			  JUMP Z, test_up_return
+              
+              LOAD is_playable, FF
+
+ test_up_return:
+              return
+
+ ; ------------------ TEST DOWN -----------------------------------
+
  test_down:
-             
- 			 return
- ;-----------------------------------------------------------------------
- ; Play a piece
- ;-----------------------------------------------------------------------
- 
- play:
-             CALL set_next_plays
- 			 return
- 
- ;-----------------------------------------------------------------------
- ; Interrupt code
- ;-----------------------------------------------------------------------
-int_routine: CALL play
-             RETURNI ENABLE
+              LOAD current_test_found_opposite_color, 00
+			  LOAD current_test_position, board_pos
 
-             ADDRESS 3FF            ; Set interrupt vector
-             JUMP int_routine
+ test_down_loop:
+              ADD current_test_position, 08
+			  
+			  ; Check if we fell off the bottom of the board.
+			  LOAD s0, current_test_position
+			  AND s0, 38
+			  COMPARE s0, 00
+			  JUMP Z, test_down_return
+			  
+			  INPUT temp_color, (current_test_position)
+			  AND temp_color, 0F
+			  COMPARE temp_color, opposite_player_color
+			  JUMP NZ, test_down_opp_test_fail
+			  
+			  LOAD current_test_found_opposite_color, FF
+			  JUMP test_down_loop
+
+ test_down_opp_test_fail:
+
+              COMPARE temp_color, current_player_color
+			  JUMP NZ, test_down_return
+			  COMPARE current_test_found_opposite_color, 00
+			  JUMP Z, test_down_return
+              
+              LOAD is_playable, FF
+
+ test_down_return:
+              return
+
+ ; ------------------ TEST UP-LEFT --------------------------------
+
+ test_upleft:
+              LOAD current_test_found_opposite_color, 00
+			  LOAD current_test_position, board_pos
+
+ test_upleft_loop:
+              SUB current_test_position, 09
+			  
+			  ; Check if we fell off the left of the board.
+			  LOAD s0, current_test_position
+			  AND s0, 07
+			  COMPARE s0, 07
+			  JUMP Z, test_upleft_return
+			  
+			  ; Check if we fell off the top of the board.
+			  LOAD s0, current_test_position
+			  AND s0, 38
+			  COMPARE s0, 38
+			  JUMP Z, test_upleft_return
+			  
+			  INPUT temp_color, (current_test_position)
+			  AND temp_color, 0F
+			  COMPARE temp_color, opposite_player_color
+			  JUMP NZ, test_upleft_opp_test_fail
+			  
+			  LOAD current_test_found_opposite_color, FF
+			  JUMP test_upleft_loop
+
+ test_upleft_opp_test_fail:
+
+              COMPARE temp_color, current_player_color
+			  JUMP NZ, test_upleft_return
+			  COMPARE current_test_found_opposite_color, 00
+			  JUMP Z, test_upleft_return
+
+              LOAD is_playable, FF
+
+ test_upleft_return:
+              return
+			  
+
+ ; ------------------ TEST UP-RIGHT -------------------------------
+
+ test_upright:
+              LOAD current_test_found_opposite_color, 00
+			  LOAD current_test_position, board_pos
+
+ test_upright_loop:
+              SUB current_test_position, 07
+			  
+			  ; Check if we fell off the right of the board.
+			  LOAD s0, current_test_position
+			  AND s0, 07
+			  COMPARE s0, 00
+			  JUMP Z, test_upright_return
+
+			  ; Check if we fell off the top of the board.
+			  LOAD s0, current_test_position
+			  AND s0, 38
+			  COMPARE s0, 38
+			  JUMP Z, test_upright_return
+			  
+			  INPUT temp_color, (current_test_position)
+			  AND temp_color, 0F
+			  COMPARE temp_color, opposite_player_color
+			  JUMP NZ, test_upright_opp_test_fail
+			  
+			  LOAD current_test_found_opposite_color, FF
+			  JUMP test_upright_loop
+
+ test_upright_opp_test_fail:
+
+              COMPARE temp_color, current_player_color
+			  JUMP NZ, test_upright_return
+			  COMPARE current_test_found_opposite_color, 00
+			  JUMP Z, test_upright_return
+
+              LOAD is_playable, FF
+
+ test_upright_return:
+              return
+
+ ; ------------------ TEST DOWN-LEFT ------------------------------
+
+ test_downleft:
+              LOAD current_test_found_opposite_color, 00
+			  LOAD current_test_position, board_pos
+
+ test_downleft_loop:
+              ADD current_test_position, 07
+			  
+			  ; Check if we fell off the left of the board.
+			  LOAD s0, current_test_position
+			  AND s0, 07
+			  COMPARE s0, 07
+			  JUMP Z, test_downleft_return
+			  
+			  ; Check if we fell off the bottom of the board.
+			  LOAD s0, current_test_position
+			  AND s0, 38
+			  COMPARE s0, 00
+			  JUMP Z, test_downleft_return
+			  
+			  INPUT temp_color, (current_test_position)
+			  AND temp_color, 0F
+			  COMPARE temp_color, opposite_player_color
+			  JUMP NZ, test_downleft_opp_test_fail
+			  
+			  LOAD current_test_found_opposite_color, FF
+			  JUMP test_downleft_loop
+
+ test_downleft_opp_test_fail:
+
+              COMPARE temp_color, current_player_color
+			  JUMP NZ, test_downleft_return
+			  COMPARE current_test_found_opposite_color, 00
+			  JUMP Z, test_downleft_return
+
+              LOAD is_playable, FF
+
+ test_downleft_return:
+              return
+
+ ; ------------------ TEST DOWN-RIGHT -----------------------------
+
+ test_downright:
+              LOAD current_test_found_opposite_color, 00
+			  LOAD current_test_position, board_pos
+
+ test_downright_loop:
+              ADD current_test_position, 09
+			  
+			  ; Check if we fell off the left of the board.
+			  LOAD s0, current_test_position
+			  AND s0, 07
+			  COMPARE s0, 00
+			  JUMP Z, test_downright_return
+			  
+			  ; Check if we fell off the bottom of the board.
+			  LOAD s0, current_test_position
+			  AND s0, 38
+			  COMPARE s0, 00
+			  JUMP Z, test_downright_return
+			  
+			  INPUT temp_color, (current_test_position)
+			  AND temp_color, 0F
+			  COMPARE temp_color, opposite_player_color
+			  JUMP NZ, test_downright_opp_test_fail
+			  
+			  LOAD current_test_found_opposite_color, FF
+			  JUMP test_downright_loop
+
+ test_downright_opp_test_fail:
+
+              COMPARE temp_color, current_player_color
+			  JUMP NZ, test_downright_return
+			  COMPARE current_test_found_opposite_color, 00
+			  JUMP Z, test_downright_return
+
+              LOAD is_playable, FF
+
+ test_downright_return:
+              return
+
+ ;-----------------------------------------------------------------------
+ ; Play functions (Try to play pieces in each direction)
+ ;-----------------------------------------------------------------------
+
+ ; ------------------ PLAY LEFT -----------------------------------------
+ play_left:
+     LOAD is_playable, 00
+	 CALL test_left
+	 COMPARE is_playable, 00
+	 JUMP Z, play_left_return
+
+	 LOAD current_test_position, board_pos
+
+ play_left_loop:
+     SUB current_test_position, 01
+	 
+	 INPUT s0, (current_test_position)
+	 COMPARE s0, opposite_player_color
+	 JUMP NZ, play_left_return
+
+	 OUTPUT current_player_color, (current_test_position)
+	 
+	 JUMP play_left_loop
+
+ play_left_return:
+     return
+
+ ; ------------------ PLAY RIGHT ----------------------------------------
+ play_right:
+     LOAD is_playable, 00
+	 CALL test_right
+	 COMPARE is_playable, 00
+	 JUMP Z, play_right_return
+
+	 LOAD current_test_position, board_pos
+
+ play_right_loop:
+     ADD current_test_position, 01
+	 
+	 INPUT s0, (current_test_position)
+	 COMPARE s0, opposite_player_color
+	 JUMP NZ, play_right_return
+
+	 OUTPUT current_player_color, (current_test_position)
+	 
+	 JUMP play_right_loop
+
+ play_right_return:
+     return
+
+ ; ------------------ PLAY UP -------------------------------------------
+ play_up:
+     LOAD is_playable, 00
+	 CALL test_up
+	 COMPARE is_playable, 00
+	 JUMP Z, play_up_return
+
+	 LOAD current_test_position, board_pos
+
+ play_up_loop:
+     SUB current_test_position, 08
+
+	 INPUT s0, (current_test_position)
+	 COMPARE s0, opposite_player_color
+	 JUMP NZ, play_up_return
+
+	 OUTPUT current_player_color, (current_test_position)
+	 
+	 JUMP play_up_loop
+
+ play_up_return:
+     return
+
+ ; ------------------ PLAY DOWN -----------------------------------------
+ play_down:
+     LOAD is_playable, 00
+	 CALL test_down
+	 COMPARE is_playable, 00
+	 JUMP Z, play_down_return
+
+	 LOAD current_test_position, board_pos
+
+ play_down_loop:
+     ADD current_test_position, 08
+	 
+	 INPUT s0, (current_test_position)
+	 COMPARE s0, opposite_player_color
+	 JUMP NZ, play_down_return
+
+	 OUTPUT current_player_color, (current_test_position)
+	 
+	 JUMP play_down_loop
+
+ play_down_return:
+     return
+
+ ; ------------------ PLAY UP-LEFT --------------------------------
+ play_upleft:
+     LOAD is_playable, 00
+	 CALL test_upleft
+	 COMPARE is_playable, 00
+	 JUMP Z, play_upleft_return
+
+	 LOAD current_test_position, board_pos
+
+ play_upleft_loop:
+     SUB current_test_position, 09
+
+	 INPUT s0, (current_test_position)
+	 COMPARE s0, opposite_player_color
+	 JUMP NZ, play_upleft_return
+
+	 OUTPUT current_player_color, (current_test_position)
+	 
+	 JUMP play_upleft_loop
+
+ play_upleft_return:
+     return
+
+ ; ------------------ PLAY UP-RIGHT -------------------------------
+ play_upright:
+     LOAD is_playable, 00
+	 CALL test_upright
+	 COMPARE is_playable, 00
+	 JUMP Z, play_upleft_return
+
+	 LOAD current_test_position, board_pos
+
+ play_upright_loop:
+     SUB current_test_position, 07
+
+	 INPUT s0, (current_test_position)
+	 COMPARE s0, opposite_player_color
+	 JUMP NZ, play_upleft_return
+
+	 OUTPUT current_player_color, (current_test_position)
+
+	 JUMP play_upright_loop
+
+ play_upright_return:
+     return
+
+ ; ------------------ PLAY DOWN-LEFT ------------------------------
+ play_downleft:
+     LOAD is_playable, 00
+	 CALL test_downleft
+	 COMPARE is_playable, 00
+	 JUMP Z, play_downleft_return
+
+	 LOAD current_test_position, board_pos
+
+ play_downleft_loop:
+     ADD current_test_position, 07
+
+	 INPUT s0, (current_test_position)
+	 COMPARE s0, opposite_player_color
+	 JUMP NZ, play_downleft_return
+
+	 OUTPUT current_player_color, (current_test_position)
+
+	 JUMP play_downleft_loop
+
+ play_downleft_return:
+     return
+
+ ; ------------------ PLAY DOWN-RIGHT -----------------------------
+ play_downright:
+     LOAD is_playable, 00
+	 CALL test_downright
+	 COMPARE is_playable, 00
+	 JUMP Z, play_downright_return
+
+	 LOAD current_test_position, board_pos
+
+ play_downright_loop:
+     ADD current_test_position, 09
+
+	 INPUT s0, (current_test_position)
+	 COMPARE s0, opposite_player_color
+	 JUMP NZ, play_downright_return
+
+	 OUTPUT current_player_color, (current_test_position)
+
+	 JUMP play_downright_loop
+
+ play_downright_return:
+     return
+
+ ;-----------------------------------------------------------------------
+ ; Set interrupt vector
+ ;-----------------------------------------------------------------------
+     ADDRESS 3FF
+     JUMP play

@@ -21,26 +21,15 @@ end final_project_top;
 
 architecture behavioral of final_project_top is
 
-   -- Declare PS2 keyboard driver.
-   component ps2_keyboard is port (
-      reset     : in  std_logic;
-      clk       : in  std_logic;
-      ps2_data  : in  std_logic;
-      ps2_clk   : in  std_logic;
-      available : out std_logic;
-      out_byte  : out std_logic_vector(7 downto 0)
-    );
-   end component ps2_keyboard;
-   
    -- Declare keyboard constants.
    constant ARROW_U   : std_logic_vector(7 downto 0) := x"75";
    constant ARROW_R   : std_logic_vector(7 downto 0) := x"74";
    constant ARROW_D   : std_logic_vector(7 downto 0) := x"72";
    constant ARROW_L   : std_logic_vector(7 downto 0) := x"6B";
-   constant ENTER      : std_logic_vector(7 downto 0) := x"5A";
+   constant ENTER     : std_logic_vector(7 downto 0) := x"5A";
 
    alias reset : std_logic is button(3);
-   
+
    -- Counters for debouncing each button.
    signal clk_counter    : unsigned(19 downto 0);
    signal ten_ms_en      : std_logic;
@@ -51,7 +40,7 @@ architecture behavioral of final_project_top is
    -- Setup the vga-related variables.
    signal h_count : unsigned(9 downto 0);
    signal v_count : unsigned(9 downto 0); 
-   signal vga_en : std_logic;
+   signal vga_en  : std_logic;
 
    -- Setup the game board arrays.
    type byte_array is array (integer range <>) of unsigned(7 downto 0);
@@ -74,18 +63,8 @@ architecture behavioral of final_project_top is
    -- Signals for keyboard.
    signal keyboard_data_available : std_logic;
    signal keyboard_data_out       : std_logic_vector(7 downto 0);
-begin
 
-   -- Keyboard interface
-   keyboard : ps2_keyboard 
-      port map(
-         reset,
-         clk50,
-         ps2_data,
-         ps2_clk,
-         keyboard_data_available,
-         keyboard_data_out
-    );
+begin
 
    -- Pico-blaze output handling code.
    process(clk50,reset)
@@ -119,7 +98,7 @@ begin
    begin
       if(reset = '1') then
          current_position <= (others => '0');
-           interrupt_signal <= '0';
+         interrupt_signal <= '0';
          button_0_count <= (others => '0');
          button_1_count <= (others => '0');
          button_2_count <= (others => '0');
@@ -135,7 +114,7 @@ begin
             elsif( keyup = '1' ) then
                -- This is a BREAK code, so ignore it
                keyup := '0';
-            
+
             -- Handle navigational keys
             elsif( keyboard_data_out = ARROW_R ) then
                current_position <= current_position + 1;
@@ -145,7 +124,7 @@ begin
                current_position <= current_position + 8;
             elsif( keyboard_data_out = ARROW_U ) then
                current_position <= current_position - 8;
-            
+
             -- Handle play keys
             elsif( keyboard_data_out = ENTER ) then
                interrupt_signal <= '1';
@@ -220,7 +199,7 @@ begin
          vga_en <= vga_en xor '1';
       end if;
    end process;
-   
+
    -- Count across the horizontal and vertical lines.
    process(clk50, reset)
    begin
@@ -243,23 +222,24 @@ begin
          end if;
       end if;
    end process;
-   
+
    -- Create Vsync and Hsync based on the vcount and hcount.
    vga_hs <= '0' when (h_count < x"60") else '1';
    vga_vs <= '0' when (v_count < x"02") else '1';
 
    -- Put out the pixel.
    process(h_count, v_count, current_position)
-     variable hori_off : unsigned(5 downto 0);
-     variable vert_off : unsigned(5 downto 0);
+     variable hori_off     : unsigned(5 downto 0);
+     variable vert_off     : unsigned(5 downto 0);
      variable block_number : unsigned(5 downto 0);
      variable display_enum : unsigned(3 downto 0);
      
    begin
       -- Put blank for pixels outside the bounds.
-      if((h_count < x"90") or (h_count >= x"310") or (v_count < x"1F") or (v_count >= x"1FF")) then
+      if((h_count  < x"090") or (h_count >= x"310") or
+         (v_count  < x"01F") or (v_count >= x"1FF")) then
          vga <= x"00";
-      
+
       -- Adding a blue single pixel border around the spaces.
       elsif( h_count = x"2C0" or v_count = x"1C3" or
              h_count = x"270" or v_count = x"187" or
@@ -272,43 +252,27 @@ begin
 
       else
          -- Calculate the horizontal block offset
-         if(h_count > x"2C0") then
-            hori_off := "000111";
-         elsif(h_count > x"270") then
-            hori_off := "000110";
-         elsif(h_count > x"220") then
-            hori_off := "000101";
-         elsif(h_count > x"1D0") then
-            hori_off := "000100";
-         elsif(h_count > x"180") then
-            hori_off := "000011";
-         elsif(h_count > x"130") then
-            hori_off := "000010";
-         elsif(h_count > x"0E0") then
-            hori_off := "000001";
-         else
-            hori_off := "000000";
+         if   (h_count > x"2C0") then hori_off := "000111";
+         elsif(h_count > x"270") then hori_off := "000110";
+         elsif(h_count > x"220") then hori_off := "000101";
+         elsif(h_count > x"1D0") then hori_off := "000100";
+         elsif(h_count > x"180") then hori_off := "000011";
+         elsif(h_count > x"130") then hori_off := "000010";
+         elsif(h_count > x"0E0") then hori_off := "000001";
+         else                         hori_off := "000000";
          end if;
-      
+
          -- Calculate the vertical block offset
-         if(v_count > x"1C3") then
-            vert_off := "111000";
-         elsif(v_count > x"187") then
-            vert_off := "110000";
-         elsif(v_count > x"14B") then
-            vert_off := "101000";
-         elsif(v_count > x"10F") then
-            vert_off := "100000";
-         elsif(v_count > x"D3") then
-            vert_off := "011000";
-         elsif(v_count > x"97") then
-            vert_off := "010000";
-         elsif(v_count > x"5B") then
-            vert_off := "001000";
-         else
-            vert_off := "000000";
+         if   (v_count > x"1C3") then vert_off := "111000";
+         elsif(v_count > x"187") then vert_off := "110000";
+         elsif(v_count > x"14B") then vert_off := "101000";
+         elsif(v_count > x"10F") then vert_off := "100000";
+         elsif(v_count > x"0D3") then vert_off := "011000";
+         elsif(v_count > x"097") then vert_off := "010000";
+         elsif(v_count > x"05B") then vert_off := "001000";
+         else                         vert_off := "000000";
          end if;
-         
+
          -- Combine the vertical and horizontal into the block number (between 0 & 63).
          block_number := vert_off + hori_off;
          
@@ -318,7 +282,7 @@ begin
          else 
             display_enum := game_board(to_integer(block_number))(3 downto 0);
          end if;
-         
+
          -- Put out the right color based on the enum.
          case display_enum is
             when x"0"   => vga <= "00000111"; -- Red (No Play)
@@ -329,7 +293,6 @@ begin
             when x"5"   => vga <= "00000001"; -- Dark Pink (Black Can Play)
             when others => vga <= "11000000"; -- Blue
          end case;
-         
       end if;
    end process;
 
@@ -352,5 +315,14 @@ begin
    port map( address => address_signal,
              instruction => instruction_signal,
              clk => clk50 );
+
+   -- Keyboard interface
+   keyboard : entity ps2_keyboard 
+      port map( reset => reset,
+                clk => clk50,
+                ps2_data => ps2_data,
+                ps2_clk => ps2_clk,
+                available => keyboard_data_available,
+                out_byte => keyboard_data_out );
 
 end Behavioral;
