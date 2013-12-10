@@ -71,11 +71,14 @@ BEGIN
 		reset <= '0';
       wait for process_period;
 		
-		-- verify starting center squares
+		-- verify starting game board
+		check_multiple_squares(game_board, 0, 26, SPACE_BOARD);
 		check_square(game_board, 27, SPACE_WHITE);
 		check_square(game_board, 28, SPACE_BLACK);
+		check_multiple_squares(game_board, 29, 34, SPACE_BOARD);
 		check_square(game_board, 35, SPACE_BLACK);
 		check_square(game_board, 36, SPACE_WHITE);
+		check_multiple_squares(game_board, 37, 63, SPACE_BOARD);
 		
 		-- end
 		assert false

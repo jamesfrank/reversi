@@ -15,6 +15,7 @@ package final_project_package is
 	type byte_array is array (integer range <>) of unsigned(7 downto 0);
 	
 	-- Square color values (must match picoblaze code)
+	constant SPACE_BOARD : unsigned(3 downto 0) := x"1";
 	constant SPACE_WHITE : unsigned(3 downto 0) := x"2";
 	constant SPACE_BLACK : unsigned(3 downto 0) := x"3";
 

@@ -247,7 +247,7 @@ begin
          -- Put out the right color based on the enum.
          case display_enum is
             when x"0"         => vga <= "00000111"; -- Red (No Play)
-            when x"1"         => vga <= "00100000"; -- Green (Board)
+            when SPACE_BOARD  => vga <= "00100000"; -- Green (Board)
             when SPACE_WHITE  => vga <= "11111111"; -- White
             when SPACE_BLACK  => vga <= "00000000"; -- Black
             when x"4"         => vga <= "11110111"; -- Light Pink (White Can Play)
