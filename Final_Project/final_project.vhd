@@ -8,6 +8,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use work.final_project_lib.all;
 
 entity final_project_top is port(
    clk50    : in  std_logic;
@@ -43,7 +44,6 @@ architecture behavioral of final_project_top is
    signal vga_en  : std_logic;
 
    -- Setup the game board arrays.
-   type byte_array is array (integer range <>) of unsigned(7 downto 0);
    signal game_board : byte_array(63 downto 0);
    signal current_position : unsigned(5 downto 0);
 
