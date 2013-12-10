@@ -1,3 +1,10 @@
+----------------------------------------------------------------------------------
+-- PS2 Keyboard Driver
+--
+-- Based on work by Javier Valcarce García
+-- Modified by: Eric Beales &  James Frank
+----------------------------------------------------------------------------------
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
