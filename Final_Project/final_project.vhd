@@ -27,6 +27,7 @@ architecture behavioral of final_project_top is
    constant ARROW_D   : std_logic_vector(7 downto 0) := x"72";
    constant ARROW_L   : std_logic_vector(7 downto 0) := x"6B";
    constant ENTER     : std_logic_vector(7 downto 0) := x"5A";
+   constant ESCAPE    : std_logic_vector(7 downto 0) := x"76";
 
    alias reset : std_logic is button(3);
 
@@ -45,13 +46,17 @@ architecture behavioral of final_project_top is
    -- Setup the game logic interface.
    signal game_board : byte_array(63 downto 0);
    signal current_position : unsigned(5 downto 0);
-	signal play     : std_logic;
+   signal play     : std_logic;
+   signal logic_reset : std_logic;
+   signal restart_game : std_logic := '0';
 
    -- Signals for keyboard.
    signal keyboard_data_available : std_logic;
    signal keyboard_data_out       : std_logic_vector(7 downto 0);
 
 begin
+
+   logic_reset <= reset or restart_game;
 
    -- Generate the VGA enable signal (25 MHz)
    process(clk50,reset)
@@ -89,6 +94,10 @@ begin
             -- Handle play key
             elsif( keyboard_data_out = ENTER ) then
                play <= '1';
+            -- Handle restart key
+            elsif( keyboard_data_out = ESCAPE ) then
+               current_position <= (others => '0');
+               restart_game <= '1';
             end if;
          end if;
 
@@ -129,6 +138,11 @@ begin
          -- Clear the play signal
          if play  = '1' then
             play <= '0';
+         end if;
+         
+         -- Clear the restart game signal
+         if restart_game  = '1' then
+            restart_game <= '0';
          end if;
 
       end if;
@@ -256,14 +270,14 @@ begin
          end case;
       end if;
    end process;
-	
-	-- Game logic interface
-	logic : entity game_logic
-	port map( clk => clk50,
-				 reset => reset,
-				 play => play,
-				 game_board_out => game_board,
-				 current_position => current_position );
+   
+   -- Game logic interface
+   logic : entity game_logic
+   port map( clk => clk50,
+             reset => logic_reset,
+             play => play,
+             game_board_out => game_board,
+             current_position => current_position );
 
    -- Keyboard interface
    keyboard : entity ps2_keyboard 
