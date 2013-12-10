@@ -7,7 +7,7 @@
 LIBRARY ieee;
 USE ieee.std_logic_1164.ALL;
 USE ieee.numeric_std.ALL;
-use work.final_project_lib.all;
+use work.final_project_package.all;
 use work.final_project_test_package.all;
  
 ENTITY game_logic_tb IS

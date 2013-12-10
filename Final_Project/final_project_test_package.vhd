@@ -9,7 +9,7 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 USE work.std_logic_1164_additions.ALL;
 use ieee.numeric_std.all;
-use work.final_project_lib.all;
+use work.final_project_package.all;
 
 package final_project_test_package is
 	

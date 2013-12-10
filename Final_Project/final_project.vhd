@@ -7,7 +7,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-use work.final_project_lib.all;
+use work.final_project_package.all;
 
 entity final_project_top is port(
    clk50    : in  std_logic;
