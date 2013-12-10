@@ -3,7 +3,6 @@
 -- Final Project
 --
 -- Authors: Eric Beales &  James Frank
--- Date:    25-Nov-2013
 ----------------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
@@ -22,7 +21,7 @@ end final_project_top;
 
 architecture behavioral of final_project_top is
 
-   -- Declare keyboard constants.
+   -- Keyboard constants.
    constant ARROW_U   : std_logic_vector(7 downto 0) := x"75";
    constant ARROW_R   : std_logic_vector(7 downto 0) := x"74";
    constant ARROW_D   : std_logic_vector(7 downto 0) := x"72";
@@ -43,22 +42,10 @@ architecture behavioral of final_project_top is
    signal v_count : unsigned(9 downto 0); 
    signal vga_en  : std_logic;
 
-   -- Setup the game board arrays.
+   -- Setup the game logic interface.
    signal game_board : byte_array(63 downto 0);
    signal current_position : unsigned(5 downto 0);
-
-   -- Signals between the picoblaze and it's rom.
-   signal address_signal       : std_logic_vector( 9 downto 0);
-   signal instruction_signal   : std_logic_vector(17 downto 0);
-
-   -- Signals to/from the picoblaze.
-   signal port_id_signal       : std_logic_vector( 7 downto 0);
-   signal write_strobe_signal  : std_logic;
-   signal out_port_signal      : std_logic_vector( 7 downto 0);
-   signal in_port_signal       : std_logic_vector( 7 downto 0);
-   signal read_strobe_signal   : std_logic;
-   signal interrupt_signal     : std_logic;
-   signal interrupt_ack_signal : std_logic;
+	signal play     : std_logic;
 
    -- Signals for keyboard.
    signal keyboard_data_available : std_logic;
@@ -66,39 +53,13 @@ architecture behavioral of final_project_top is
 
 begin
 
-   -- Pico-blaze output handling code.
-   process(clk50,reset)
-   begin
-      if(reset = '1') then
-         game_board <= (others => x"10");
-      elsif(rising_edge(clk50)) then
-         if (write_strobe_signal = '1') then
-            if (port_id_signal(7 downto 6) = "00") then -- 00xxxxxx will change the game board
-               game_board(to_integer(unsigned(port_id_signal(5 downto 0)))) <= unsigned(out_port_signal);
-            end if;
-         end if;
-      end if;
-   end process;
-
-   -- Pico-blaze input handling code.
-   process(port_id_signal, game_board, current_position)
-   begin
-      if (port_id_signal(7 downto 6) = "00") then -- 00xxxxxx will get the game board
-        in_port_signal <= std_logic_vector(game_board(to_integer(unsigned(port_id_signal(5 downto 0)))));
-      elsif (port_id_signal = x"40") then -- x40 will get the current position
-        in_port_signal <= "00" & std_logic_vector(current_position);
-      else
-        in_port_signal <= x"00";
-      end if;
-   end process;
-
    -- Generate the VGA enable signal (25 MHz)
    process(clk50,reset)
       variable keyup : std_logic := '0';
    begin
       if(reset = '1') then
          current_position <= (others => '0');
-         interrupt_signal <= '0';
+         play <= '0';
          button_0_count <= (others => '0');
          button_1_count <= (others => '0');
          button_2_count <= (others => '0');
@@ -125,9 +86,9 @@ begin
             elsif( keyboard_data_out = ARROW_U ) then
                current_position <= current_position - 8;
 
-            -- Handle play keys
+            -- Handle play key
             elsif( keyboard_data_out = ENTER ) then
-               interrupt_signal <= '1';
+               play <= '1';
             end if;
          end if;
 
@@ -157,7 +118,7 @@ begin
             if(button(2) = '0') then
                button_2_count <= (others => '0');
             elsif( button_2_count = x"4") then
-               interrupt_signal <= '1';
+               play <= '1';
                button_2_count <= (others => '1');
             elsif( button_2_count /= "111") then
                button_2_count <= button_2_count + 1;
@@ -165,9 +126,9 @@ begin
 
          end if;
 
-         -- Clear the interrupt signal if we see an 'ack'
-         if interrupt_ack_signal  = '1' then
-            interrupt_signal <= '0';
+         -- Clear the play signal
+         if play  = '1' then
+            play <= '0';
          end if;
 
       end if;
@@ -295,34 +256,22 @@ begin
          end case;
       end if;
    end process;
-
-   -- Declaration for the picoblaze.
-   processor: entity kcpsm3
-   port map( address => address_signal,
-             instruction => instruction_signal,
-             port_id => port_id_signal,
-             write_strobe => write_strobe_signal,
-             out_port => out_port_signal,
-             read_strobe => read_strobe_signal,
-             in_port => in_port_signal,
-             interrupt => interrupt_signal,
-             interrupt_ack => interrupt_ack_signal,
-             reset => reset,
-             clk => clk50 );
-
-   -- Declaration for the picoblaze's rom.
-   program: entity finpropb
-   port map( address => address_signal,
-             instruction => instruction_signal,
-             clk => clk50 );
+	
+	-- Game logic interface
+	logic : entity game_logic
+	port map( clk => clk50,
+				 reset => reset,
+				 play => play,
+				 game_board_out => game_board,
+				 current_position => current_position );
 
    -- Keyboard interface
    keyboard : entity ps2_keyboard 
-      port map( reset => reset,
-                clk => clk50,
-                ps2_data => ps2_data,
-                ps2_clk => ps2_clk,
-                available => keyboard_data_available,
-                out_byte => keyboard_data_out );
+   port map( reset => reset,
+             clk => clk50,
+             ps2_data => ps2_data,
+             ps2_clk => ps2_clk,
+             available => keyboard_data_available,
+             out_byte => keyboard_data_out );
 
-end Behavioral;
+end behavioral;
