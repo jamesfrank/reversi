@@ -56,6 +56,7 @@ architecture behavioral of final_project_top is
 
 begin
 
+   -- Reset game logic on full reset or on restart game signal
    logic_reset <= reset or restart_game;
 
    -- Generate the VGA enable signal (25 MHz)
