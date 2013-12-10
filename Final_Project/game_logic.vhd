@@ -91,7 +91,7 @@ begin
    end process;
 
    -- Declaration for the picoblaze.
-   processor: entity kcpsm3
+   processor: entity work.kcpsm3
    port map( address => address_signal,
              instruction => instruction_signal,
              port_id => port_id_signal,
@@ -105,7 +105,7 @@ begin
              clk => clk );
 
    -- Declaration for the picoblaze's rom.
-   program: entity finpropb
+   program: entity work.finpropb
    port map( address => address_signal,
              instruction => instruction_signal,
              clk => clk );
