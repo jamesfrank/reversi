@@ -228,12 +228,17 @@ begin
          vga <= "11000000";
          
       -- Show current player marker
-      elsif( h_count >= x"2FE" and v_count <= x"34" ) then
+      elsif( h_count > x"2FE" and v_count < x"34" ) then
          if( current_player = '0' ) then
             vga <= "11111111";
          else
             vga <= "00000000";
          end if;
+         
+      -- Add border around current player marker
+      elsif( (h_count = x"2FE" and v_count < x"34") or
+             (h_count > x"2FD" and v_count = x"34") ) then
+         vga <= "01101001";
 
       else
          -- Calculate the horizontal block offset
