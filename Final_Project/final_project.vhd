@@ -205,7 +205,7 @@ begin
    vga_vs <= '0' when (v_count < x"02") else '1';
 
    -- Put out the pixel.
-   process(h_count, v_count, current_position)
+   process(h_count, v_count, current_position, current_player)
      variable hori_off     : unsigned(5 downto 0);
      variable vert_off     : unsigned(5 downto 0);
      variable block_number : unsigned(5 downto 0);
