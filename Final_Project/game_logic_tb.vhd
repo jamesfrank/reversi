@@ -79,6 +79,19 @@ BEGIN
 		check_square(game_board, 36, SPACE_WHITE);
 		check_multiple_squares(game_board, 37, 63, SPACE_BOARD);
       
+      -- illegal play on square 19
+      play_square(19, current_position, play);
+      assert false report "Attempted illegal play on square 19" severity note;
+      
+      -- re-verify starting game board, since last move was illegal
+      check_multiple_squares(game_board, 0, 26, SPACE_BOARD);
+      check_square(game_board, 27, SPACE_WHITE);
+      check_square(game_board, 28, SPACE_BLACK);
+      check_multiple_squares(game_board, 29, 34, SPACE_BOARD);
+      check_square(game_board, 35, SPACE_BLACK);
+      check_square(game_board, 36, SPACE_WHITE);
+      check_multiple_squares(game_board, 37, 63, SPACE_BOARD);
+      
       -- play on square 20
       play_square(20, current_position, play);
       assert false report "Played on square 20" severity note;
