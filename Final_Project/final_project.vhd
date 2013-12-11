@@ -228,7 +228,8 @@ begin
          vga <= "11000000";
          
       -- Show current player marker
-      elsif( h_count > x"2FE" and v_count < x"34" ) then
+      elsif( h_count > x"2FA" and h_count < x"30A" and 
+             v_count < x"34"  and v_count > x"24" ) then -- 16x16 square
          if( current_player = '0' ) then
             vga <= "11111111";
          else
@@ -236,8 +237,10 @@ begin
          end if;
          
       -- Add border around current player marker
-      elsif( (h_count = x"2FE" and v_count < x"34") or
-             (h_count > x"2FD" and v_count = x"34") ) then
+      elsif( (h_count = x"2FA" and v_count < x"34"  and v_count > x"24") or
+             (h_count > x"2F9" and h_count < x"30B" and v_count = x"34") or
+             (h_count = x"30A" and v_count < x"34"  and v_count > x"24") or
+             (h_count > x"2F9" and h_count < x"30B" and v_count = x"24") ) then
          vga <= "01101001";
 
       else
