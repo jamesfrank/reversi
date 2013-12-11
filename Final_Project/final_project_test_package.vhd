@@ -38,7 +38,7 @@ package body final_project_test_package is
 		value : unsigned(3 downto 0)
 	) is 
 	begin
-		assert game_board(square) = resize(value,8)
+		assert (game_board(square) and x"0F") = resize(value,8) -- square upper nibble indicates "can play" status; ignore it
 			report 
 				"Square " & integer'image(square) & " was " & to_string(std_logic_vector(game_board(square))) & 
 				" but expected " & to_string(std_logic_vector(resize(value,8)))

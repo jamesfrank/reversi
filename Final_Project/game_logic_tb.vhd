@@ -41,7 +41,7 @@ ARCHITECTURE behavior OF game_logic_tb IS
 
    -- Clock period definitions
    constant clk_period : time := 20 ns; -- 50 MHz
-	constant process_period : time := 20 us; -- Processing completes within 20 microseconds
+	constant process_period : time := 400 us; -- Wait for processing between operations
  
 BEGIN
  
@@ -78,6 +78,24 @@ BEGIN
 		check_multiple_squares(game_board, 0, 26, SPACE_BOARD);
 		check_square(game_board, 27, SPACE_WHITE);
 		check_square(game_board, 28, SPACE_BLACK);
+		check_multiple_squares(game_board, 29, 34, SPACE_BOARD);
+		check_square(game_board, 35, SPACE_BLACK);
+		check_square(game_board, 36, SPACE_WHITE);
+		check_multiple_squares(game_board, 37, 63, SPACE_BOARD);
+      
+      current_position <= to_unsigned(20,6);
+      wait for clk_period;
+      play <= '1';
+      wait for clk_period*2;
+      play <= '0';
+      wait for process_period;
+      
+      -- verify piece was captured
+      check_multiple_squares(game_board, 0, 19, SPACE_BOARD);
+      check_square(game_board, 20, SPACE_WHITE);
+      check_multiple_squares(game_board, 21, 26, SPACE_BOARD);
+		check_square(game_board, 27, SPACE_WHITE);
+		check_square(game_board, 28, SPACE_WHITE);
 		check_multiple_squares(game_board, 29, 34, SPACE_BOARD);
 		check_square(game_board, 35, SPACE_BLACK);
 		check_square(game_board, 36, SPACE_WHITE);
