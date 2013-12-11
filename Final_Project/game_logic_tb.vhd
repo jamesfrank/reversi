@@ -22,6 +22,7 @@ ARCHITECTURE behavior OF game_logic_tb IS
          clk : IN  std_logic;
          reset : IN  std_logic;
          play : IN  std_logic;
+         current_player : OUT std_logic;
          game_board_out : OUT  byte_array(63 downto 0);
          current_position : IN  unsigned(5 downto 0)
         );
@@ -35,6 +36,7 @@ ARCHITECTURE behavior OF game_logic_tb IS
    signal current_position : unsigned(5 downto 0) := (others => '0');
 
  	--Outputs
+   signal current_player : std_logic := '0';
    signal game_board : byte_array(63 downto 0);
 
    -- Clock period definitions
@@ -48,6 +50,7 @@ BEGIN
           clk => clk,
           reset => reset,
           play => play,
+          current_player => current_player,
           game_board_out => game_board,
           current_position => current_position
         );

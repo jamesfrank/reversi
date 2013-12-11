@@ -50,6 +50,7 @@
              
              ; Set the current player to white.
              LOAD current_player, 00
+             OUTPUT current_player, 40
 
              CALL set_next_plays
 
@@ -107,6 +108,7 @@ set_current_player_colors_return:
 
              ; Switch players & update the board
              XOR current_player, FF
+             OUTPUT current_player, 40
              CALL set_next_plays
              
              ; Validate the player can play

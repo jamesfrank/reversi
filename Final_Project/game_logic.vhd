@@ -13,6 +13,7 @@ entity game_logic is port(
    clk    : in  std_logic;
    reset : in  std_logic;
 	play : in std_logic;
+   current_player : out std_logic;
    game_board_out : out byte_array(63 downto 0);
    current_position : in unsigned(5 downto 0) );
 end game_logic;
@@ -53,6 +54,8 @@ begin
          if (write_strobe_signal = '1') then
             if (port_id_signal(7 downto 6) = "00") then -- 00xxxxxx will change the game board
                game_board(to_integer(unsigned(port_id_signal(5 downto 0)))) <= unsigned(out_port_signal);
+            elsif (port_id_signal = x"40") then -- x40 changes current player
+               current_player <= out_port_signal(0);
             end if;
          end if;
       end if;

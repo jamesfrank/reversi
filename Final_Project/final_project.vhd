@@ -44,6 +44,7 @@ architecture behavioral of final_project_top is
    signal vga_en  : std_logic;
 
    -- Setup the game logic interface.
+   signal current_player : std_logic := '0';
    signal game_board : byte_array(63 downto 0);
    signal current_position : unsigned(5 downto 0);
    signal play     : std_logic;
@@ -225,6 +226,14 @@ begin
              h_count = x"130" or v_count = x"097" or
              h_count = x"0E0" or v_count = x"05B" ) then
          vga <= "11000000";
+         
+      -- Show current player marker
+      elsif( h_count >= x"2FE" and v_count <= x"34" ) then
+         if( current_player = '0' ) then
+            vga <= "11111111";
+         else
+            vga <= "00000000";
+         end if;
 
       else
          -- Calculate the horizontal block offset
@@ -277,6 +286,7 @@ begin
    port map( clk => clk50,
              reset => logic_reset,
              play => play,
+             current_player => current_player,
              game_board_out => game_board,
              current_position => current_position );
 
