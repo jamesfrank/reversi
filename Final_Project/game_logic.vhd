@@ -12,7 +12,7 @@ use work.final_project_package.all;
 entity game_logic is port(
    clk    : in  std_logic;
    reset : in  std_logic;
-	play : in std_logic;
+    play : in std_logic;
    current_player : out std_logic;
    game_board_out : out byte_array(63 downto 0);
    current_position : in unsigned(5 downto 0) );
@@ -42,8 +42,8 @@ architecture behavioral of game_logic is
 
 begin
 
-	-- Output game board.
-	game_board_out <= game_board;
+   -- Output game board.
+   game_board_out <= game_board;
 
    -- Pico-blaze output handling code.
    process(clk,reset)
@@ -65,11 +65,11 @@ begin
    process(port_id_signal, game_board, current_position)
    begin
       if (port_id_signal(7 downto 6) = "00") then -- 00xxxxxx will get the game board
-        in_port_signal <= std_logic_vector(game_board(to_integer(unsigned(port_id_signal(5 downto 0)))));
+         in_port_signal <= std_logic_vector(game_board(to_integer(unsigned(port_id_signal(5 downto 0)))));
       elsif (port_id_signal = x"40") then -- x40 will get the current position
-        in_port_signal <= "00" & std_logic_vector(current_position);
+         in_port_signal <= "00" & std_logic_vector(current_position);
       else
-        in_port_signal <= x"00";
+         in_port_signal <= x"00";
       end if;
    end process;
 
@@ -82,7 +82,7 @@ begin
       elsif(rising_edge(clk)) then
          -- Handle keyboard input if available
          if( play = '1' ) then
-				interrupt_signal <= '1';
+             interrupt_signal <= '1';
          end if;
 
          -- Clear the interrupt signal if we see an 'ack'

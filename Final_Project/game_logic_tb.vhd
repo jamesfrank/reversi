@@ -35,13 +35,13 @@ ARCHITECTURE behavior OF game_logic_tb IS
    signal play : std_logic := '0';
    signal current_position : unsigned(5 downto 0) := (others => '0');
 
- 	--Outputs
+   --Outputs
    signal current_player : std_logic := '0';
    signal game_board : byte_array(63 downto 0);
  
 BEGIN
  
-	-- Instantiate the Unit Under Test (UUT)
+   -- Instantiate the Unit Under Test (UUT)
    uut: game_logic PORT MAP (
           clk => clk,
           reset => reset,
@@ -54,30 +54,30 @@ BEGIN
    -- Clock process definitions
    clk_process :process
    begin
-		clk <= '0';
-		wait for clk_period/2;
-		clk <= '1';
-		wait for clk_period/2;
+      clk <= '0';
+      wait for clk_period/2;
+      clk <= '1';
+      wait for clk_period/2;
    end process;
  
 
    -- Stimulus process
    stim_proc: process
-   begin		
+   begin    
       -- hold reset state for 100 ns
-		reset <= '1';
+      reset <= '1';
       wait for 100 ns;
-		reset <= '0';
+      reset <= '0';
       wait for process_period;
-		
-		-- verify starting game board
-		check_multiple_squares(game_board, 0, 26, SPACE_BOARD);
-		check_square(game_board, 27, SPACE_WHITE);
-		check_square(game_board, 28, SPACE_BLACK);
-		check_multiple_squares(game_board, 29, 34, SPACE_BOARD);
-		check_square(game_board, 35, SPACE_BLACK);
-		check_square(game_board, 36, SPACE_WHITE);
-		check_multiple_squares(game_board, 37, 63, SPACE_BOARD);
+      
+      -- verify starting game board
+      check_multiple_squares(game_board, 0, 26, SPACE_BOARD);
+      check_square(game_board, 27, SPACE_WHITE);
+      check_square(game_board, 28, SPACE_BLACK);
+      check_multiple_squares(game_board, 29, 34, SPACE_BOARD);
+      check_square(game_board, 35, SPACE_BLACK);
+      check_square(game_board, 36, SPACE_WHITE);
+      check_multiple_squares(game_board, 37, 63, SPACE_BOARD);
       
       -- illegal play on square 19
       play_square(19, current_position, play);
@@ -100,12 +100,12 @@ BEGIN
       check_multiple_squares(game_board, 0, 19, SPACE_BOARD);
       check_square(game_board, 20, SPACE_WHITE);
       check_multiple_squares(game_board, 21, 26, SPACE_BOARD);
-		check_square(game_board, 27, SPACE_WHITE);
-		check_square(game_board, 28, SPACE_WHITE);
-		check_multiple_squares(game_board, 29, 34, SPACE_BOARD);
-		check_square(game_board, 35, SPACE_BLACK);
-		check_square(game_board, 36, SPACE_WHITE);
-		check_multiple_squares(game_board, 37, 63, SPACE_BOARD);
+      check_square(game_board, 27, SPACE_WHITE);
+      check_square(game_board, 28, SPACE_WHITE);
+      check_multiple_squares(game_board, 29, 34, SPACE_BOARD);
+      check_square(game_board, 35, SPACE_BLACK);
+      check_square(game_board, 36, SPACE_WHITE);
+      check_multiple_squares(game_board, 37, 63, SPACE_BOARD);
       
       -- play on square 21
       play_square(21, current_position, play);
@@ -116,19 +116,19 @@ BEGIN
       check_square(game_board, 20, SPACE_WHITE);
       check_square(game_board, 21, SPACE_BLACK);
       check_multiple_squares(game_board, 22, 26, SPACE_BOARD);
-		check_square(game_board, 27, SPACE_WHITE);
-		check_square(game_board, 28, SPACE_BLACK);
-		check_multiple_squares(game_board, 29, 34, SPACE_BOARD);
-		check_square(game_board, 35, SPACE_BLACK);
-		check_square(game_board, 36, SPACE_WHITE);
-		check_multiple_squares(game_board, 37, 63, SPACE_BOARD);
+      check_square(game_board, 27, SPACE_WHITE);
+      check_square(game_board, 28, SPACE_BLACK);
+      check_multiple_squares(game_board, 29, 34, SPACE_BOARD);
+      check_square(game_board, 35, SPACE_BLACK);
+      check_square(game_board, 36, SPACE_WHITE);
+      check_multiple_squares(game_board, 37, 63, SPACE_BOARD);
       
       -- reset board and play new game (white wins this one)
       assert false report "Starting complete game" severity note;
       
       reset <= '1';
       wait for 100 ns;
-		reset <= '0';
+      reset <= '0';
       wait for process_period;
       
       play_square(20, current_position, play);
@@ -201,7 +201,7 @@ BEGIN
       
       reset <= '1';
       wait for 100 ns;
-		reset <= '0';
+      reset <= '0';
       wait for process_period;
       
       play_square(20, current_position, play);
@@ -269,10 +269,10 @@ BEGIN
       assert false report "Finished complete game, now verifying that black won" severity note;
       check_multiple_squares(game_board, 0, 63, SPACE_BLACK);
       
-		-- end
-		assert false
-			report "End of testbench, ended normally"
-			severity failure;
+      -- end
+      assert false
+         report "End of testbench, ended normally"
+         severity failure;
       wait;
    end process;
 
