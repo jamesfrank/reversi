@@ -38,10 +38,6 @@ ARCHITECTURE behavior OF game_logic_tb IS
  	--Outputs
    signal current_player : std_logic := '0';
    signal game_board : byte_array(63 downto 0);
-
-   -- Clock period definitions
-   constant clk_period : time := 20 ns; -- 50 MHz
-	constant process_period : time := 400 us; -- Wait for processing between operations
  
 BEGIN
  
@@ -83,19 +79,32 @@ BEGIN
 		check_square(game_board, 36, SPACE_WHITE);
 		check_multiple_squares(game_board, 37, 63, SPACE_BOARD);
       
-      current_position <= to_unsigned(20,6);
-      wait for clk_period;
-      play <= '1';
-      wait for clk_period*2;
-      play <= '0';
-      wait for process_period;
+      -- play on square 20
+      play_square(20, current_position, play);
+      assert false report "Played on square 20" severity note;
       
-      -- verify piece was captured
+      -- verify 20 and 28 were captured by white and no other changes were made
       check_multiple_squares(game_board, 0, 19, SPACE_BOARD);
       check_square(game_board, 20, SPACE_WHITE);
       check_multiple_squares(game_board, 21, 26, SPACE_BOARD);
 		check_square(game_board, 27, SPACE_WHITE);
 		check_square(game_board, 28, SPACE_WHITE);
+		check_multiple_squares(game_board, 29, 34, SPACE_BOARD);
+		check_square(game_board, 35, SPACE_BLACK);
+		check_square(game_board, 36, SPACE_WHITE);
+		check_multiple_squares(game_board, 37, 63, SPACE_BOARD);
+      
+      -- play on square 21
+      play_square(21, current_position, play);
+      assert false report "Played on square 21" severity note;
+      
+      -- verify 21 and 28 were captured by black and no other changes were made
+      check_multiple_squares(game_board, 0, 19, SPACE_BOARD);
+      check_square(game_board, 20, SPACE_WHITE);
+      check_square(game_board, 21, SPACE_BLACK);
+      check_multiple_squares(game_board, 22, 26, SPACE_BOARD);
+		check_square(game_board, 27, SPACE_WHITE);
+		check_square(game_board, 28, SPACE_BLACK);
 		check_multiple_squares(game_board, 29, 34, SPACE_BOARD);
 		check_square(game_board, 35, SPACE_BLACK);
 		check_square(game_board, 36, SPACE_WHITE);

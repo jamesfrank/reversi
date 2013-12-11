@@ -12,6 +12,10 @@ use ieee.numeric_std.all;
 use work.final_project_package.all;
 
 package final_project_test_package is
+
+   -- Clock period definitions
+   constant clk_period : time := 20 ns; -- 50 MHz
+	constant process_period : time := 400 us; -- Wait for processing between operations
 	
 	procedure check_square (
 		game_board : byte_array(63 downto 0);
@@ -24,6 +28,12 @@ package final_project_test_package is
 		start_square : integer;
 		end_square : integer;
 		value : unsigned(3 downto 0)
+	);
+   
+   procedure play_square (
+		square : integer;
+		signal current_position : out unsigned(5 downto 0);
+		signal play : out std_logic
 	);
 
 end final_project_test_package;
@@ -61,5 +71,20 @@ package body final_project_test_package is
 			square := square + 1;
 		end loop;
 	end check_multiple_squares;
+   
+   -- Plays on the given square.
+   procedure play_square (
+		square : integer;
+		signal current_position : out unsigned(5 downto 0);
+		signal play : out std_logic
+	) is
+   begin
+      current_position <= to_unsigned(square,6);
+      wait for clk_period;
+      play <= '1';
+      wait for clk_period*2;
+      play <= '0';
+      wait for process_period;
+   end play_square;
  
 end final_project_test_package;
