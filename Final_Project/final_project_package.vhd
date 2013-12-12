@@ -2,7 +2,10 @@
 -- FPGA Design Using VHDL
 -- Final Project
 --
--- Authors: Eric Beales &  James Frank
+-- Authors: Eric Beales & James Frank
+--
+-- Description: This package contains common types and constants shared by 
+--              multiple project components.
 ----------------------------------------------------------------------------------
 
 library IEEE;
