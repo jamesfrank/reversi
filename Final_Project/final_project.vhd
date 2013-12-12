@@ -60,13 +60,14 @@ begin
    -- Reset game logic on full reset or on restart game signal
    logic_reset <= reset or restart_game;
 
-   -- Generate the VGA enable signal (25 MHz)
+   -- Take in any external inputs.
    process(clk50,reset)
       variable keyup : std_logic := '0';
    begin
       if(reset = '1') then
          current_position <= (others => '0');
          play <= '0';
+         restart_game <= '0';
          button_0_count <= (others => '0');
          button_1_count <= (others => '0');
          button_2_count <= (others => '0');
