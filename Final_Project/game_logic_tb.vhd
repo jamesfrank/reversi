@@ -2,7 +2,12 @@
 -- FPGA Design Using VHDL
 -- Final Project
 --
--- Authors: Eric Beales &  James Frank
+-- Authors: Eric Beales & James Frank
+--
+-- Description: Test bench for game logic component. Initializes game logic, 
+--              verifies starting conditions, tests illegal move rejection and 
+--              valid move piece capture, and plays two complete games to verify 
+--              proper win condition detection.
 ----------------------------------------------------------------------------------
 LIBRARY ieee;
 USE ieee.std_logic_1164.ALL;
