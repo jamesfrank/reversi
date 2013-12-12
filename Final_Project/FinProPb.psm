@@ -86,7 +86,7 @@ set_current_player_colors_return:
  ;-----------------------------------------------------------------------
  play:
              ; Get the information about the current position
-             INPUT board_pos, addr_current_position
+             INPUT board_pos, addr_in_current_position
              CALL set_current_player_colors
  
              ; Check to see if this was a playable spot.
