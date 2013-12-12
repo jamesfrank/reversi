@@ -220,7 +220,7 @@ begin
 
       -- Adding a single pixel border around the spaces
       elsif( h_count = x"2C0" or v_count = x"1C7" or
-             h_count = x"270" or v_count = x"18A" or
+             h_count = x"270" or v_count = x"18B" or
              h_count = x"220" or v_count = x"14F" or
              h_count = x"1D0" or v_count = x"113" or
              h_count = x"180" or v_count = x"0D7" or
