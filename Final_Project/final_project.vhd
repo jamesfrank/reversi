@@ -218,7 +218,7 @@ begin
          (v_count  < x"023") or (v_count >= x"203")) then
          vga <= "00000000"; -- Black
 
-      -- Adding a blue single pixel border around the spaces.
+      -- Adding a single pixel border around the spaces
       elsif( h_count = x"2C0" or v_count = x"1C7" or
              h_count = x"270" or v_count = x"18A" or
              h_count = x"220" or v_count = x"14F" or
@@ -240,7 +240,7 @@ begin
       -- Add border around current player marker
       elsif( h_count >= x"2FA" and v_count >= x"28" and 
              h_count <= x"30A" and v_count <= x"38" ) then
-         vga <= "01101001"; -- Green
+         vga <= "11000000"; -- Blue
 
       else
          -- Calculate the horizontal block offset
