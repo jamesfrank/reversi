@@ -2,7 +2,12 @@
 -- FPGA Design Using VHDL
 -- Final Project
 --
--- Authors: Eric Beales &  James Frank
+-- Authors: Eric Beales & James Frank
+--
+-- Description: Top level entity for project. Interfaces button and PS/2 keyboard 
+--              driver input with game logic component, tracks current position, 
+--              and generates VGA output using game board array and current player 
+--              status.
 ----------------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
