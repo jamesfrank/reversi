@@ -178,7 +178,7 @@ begin
       end if;
    end process;
 
-   -- Count across the horizontal and vertical lines.
+   -- Count across the horizontal (0-799) and vertical (0-524) lines.
    process(clk50, reset)
    begin
       if(reset = '1') then
@@ -187,11 +187,11 @@ begin
 
       elsif(rising_edge(clk50)) then
          if(vga_en = '1') then
-            if(h_count < x"31F") then
+            if(h_count <= x"31F") then
                h_count <= h_count + 1;
             else
                h_count <= (others => '0');
-               if(v_count < x"208") then
+               if(v_count <= x"20C") then
                   v_count <= v_count + 1;
                else
                   v_count <= (others => '0');
@@ -206,43 +206,41 @@ begin
    vga_vs <= '0' when (v_count < x"02") else '1';
 
    -- Put out the pixel.
-   process(h_count, v_count, current_position, current_player)
+   process(h_count, v_count, current_position, current_player, game_board)
      variable hori_off     : unsigned(5 downto 0);
      variable vert_off     : unsigned(5 downto 0);
      variable block_number : unsigned(5 downto 0);
      variable display_enum : unsigned(3 downto 0);
      
    begin
-      -- Put blank for pixels outside the bounds.
+      -- Put blank for pixels outside the gameboard. (syncs,porches,borders)
       if((h_count  < x"090") or (h_count >= x"310") or
-         (v_count  < x"01F") or (v_count >= x"1FF")) then
-         vga <= x"00";
+         (v_count  < x"023") or (v_count >= x"203")) then
+         vga <= "00000000"; -- Black
 
       -- Adding a blue single pixel border around the spaces.
-      elsif( h_count = x"2C0" or v_count = x"1C3" or
-             h_count = x"270" or v_count = x"187" or
-             h_count = x"220" or v_count = x"14B" or
-             h_count = x"1D0" or v_count = x"10F" or
-             h_count = x"180" or v_count = x"0D3" or
-             h_count = x"130" or v_count = x"097" or
-             h_count = x"0E0" or v_count = x"05B" ) then
-         vga <= "11000000";
+      elsif( h_count = x"2C0" or v_count = x"1C7" or
+             h_count = x"270" or v_count = x"18A" or
+             h_count = x"220" or v_count = x"14F" or
+             h_count = x"1D0" or v_count = x"113" or
+             h_count = x"180" or v_count = x"0D7" or
+             h_count = x"130" or v_count = x"09B" or
+             h_count = x"0E0" or v_count = x"05F" ) then
+         vga <= "11000000"; -- Blue
          
-      -- Show current player marker
-      elsif( h_count > x"2FA" and h_count < x"30A" and 
-             v_count < x"34"  and v_count > x"24" ) then -- 16x16 square
+      -- Show current player marker (16x16 square)
+      elsif( h_count > x"2FA" and v_count > x"28" and 
+             h_count < x"30A" and v_count < x"38" ) then
          if( current_player = '0' ) then
-            vga <= "11111111";
+            vga <= "11111111"; -- White
          else
-            vga <= "00000000";
+            vga <= "00000000"; -- Black
          end if;
          
       -- Add border around current player marker
-      elsif( (h_count = x"2FA" and v_count < x"34"  and v_count > x"24") or
-             (h_count > x"2F9" and h_count < x"30B" and v_count = x"34") or
-             (h_count = x"30A" and v_count < x"34"  and v_count > x"24") or
-             (h_count > x"2F9" and h_count < x"30B" and v_count = x"24") ) then
-         vga <= "01101001";
+      elsif( h_count >= x"2FA" and v_count >= x"28" and 
+             h_count <= x"30A" and v_count <= x"38" ) then
+         vga <= "01101001"; -- Green
 
       else
          -- Calculate the horizontal block offset
@@ -257,13 +255,13 @@ begin
          end if;
 
          -- Calculate the vertical block offset
-         if   (v_count > x"1C3") then vert_off := "111000";
-         elsif(v_count > x"187") then vert_off := "110000";
-         elsif(v_count > x"14B") then vert_off := "101000";
-         elsif(v_count > x"10F") then vert_off := "100000";
-         elsif(v_count > x"0D3") then vert_off := "011000";
-         elsif(v_count > x"097") then vert_off := "010000";
-         elsif(v_count > x"05B") then vert_off := "001000";
+         if   (v_count > x"1C7") then vert_off := "111000";
+         elsif(v_count > x"18B") then vert_off := "110000";
+         elsif(v_count > x"14F") then vert_off := "101000";
+         elsif(v_count > x"113") then vert_off := "100000";
+         elsif(v_count > x"0D7") then vert_off := "011000";
+         elsif(v_count > x"09B") then vert_off := "010000";
+         elsif(v_count > x"05F") then vert_off := "001000";
          else                         vert_off := "000000";
          end if;
 
