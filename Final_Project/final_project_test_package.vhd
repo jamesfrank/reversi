@@ -2,7 +2,9 @@
 -- FPGA Design Using VHDL
 -- Final Project
 --
--- Authors: Eric Beales &  James Frank
+-- Authors: Eric Beales & James Frank
+--
+-- Description: This package contains constants and procedures used for testing.
 ----------------------------------------------------------------------------------
 
 library IEEE;
@@ -13,8 +15,8 @@ use work.final_project_package.all;
 
 package final_project_test_package is
 
-   -- Clock period definitions
-   constant clk_period : time := 20 ns; -- 50 MHz
+    -- Clock period definitions
+    constant clk_period : time := 20 ns; -- 50 MHz
     constant process_period : time := 400 us; -- Wait for processing between operations
     
     procedure check_square (
@@ -30,7 +32,7 @@ package final_project_test_package is
         value : unsigned(3 downto 0)
     );
    
-   procedure play_square (
+    procedure play_square (
         square : integer;
         signal current_position : out unsigned(5 downto 0);
         signal play : out std_logic
