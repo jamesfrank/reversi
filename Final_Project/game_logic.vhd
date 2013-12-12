@@ -2,7 +2,7 @@
 -- FPGA Design Using VHDL
 -- Final Project
 --
--- Authors: Eric Beales &  James Frank
+-- Authors: Eric Beales & James Frank
 --
 -- Description: This entity interfaces with the PicoBlaze game logic code. The 
 --              current_position input value should be tracked externally based 
