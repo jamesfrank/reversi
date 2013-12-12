@@ -1,10 +1,12 @@
 ----------------------------------------------------------------------------------
 -- PS2 Keyboard Driver
 --
--- Based on work by Javier Valcarce García
--- Modified by: Eric Beales &  James Frank
+-- Original driver by Javier Valcarce García
+-- Modified by: Eric Beales & James Frank
+--
+-- Description: Receives key input data from a PS/2 keyboard. New data is 
+--              indicated by available flag and is output to the out_byte output.
 ----------------------------------------------------------------------------------
-
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
