@@ -3,6 +3,14 @@
 -- Final Project
 --
 -- Authors: Eric Beales &  James Frank
+--
+-- Description: This entity interfaces with the PicoBlaze game logic code. The 
+--              current_position input value should be tracked externally based 
+--              on the human interface device in use. A move may be made by 
+--              emitting a pulse on the play input. The game_board_out output 
+--              contains the complete game board status and will be updated in 
+--              response to play commands. The current_player output value will 
+--              be updated in response to play commands.
 ----------------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
@@ -12,7 +20,7 @@ use work.final_project_package.all;
 entity game_logic is port(
    clk    : in  std_logic;
    reset : in  std_logic;
-    play : in std_logic;
+   play : in std_logic;
    current_player : out std_logic;
    game_board_out : out byte_array(63 downto 0);
    current_position : in unsigned(5 downto 0) );
