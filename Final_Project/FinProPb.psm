@@ -6,7 +6,8 @@
  ; Date:    25-Nov-2013
  ;-----------------------------------------------------------------------
 
-             CONSTANT addr_current_position, 40
+             CONSTANT addr_in_current_position, 40
+             CONSTANT addr_out_current_player, 40
 
              CONSTANT space_white_can_play, 41
              CONSTANT space_black_can_play, 51
@@ -48,9 +49,9 @@
              OUTPUT temp_color, 1C
              OUTPUT temp_color , 23
              
-             ; Set the current player to white.
-             LOAD current_player, 00
-             OUTPUT current_player, 40
+             ; Set the current player to black.
+             LOAD current_player, FF
+             OUTPUT current_player, addr_out_current_player
 
              CALL set_next_plays
 
@@ -108,7 +109,7 @@ set_current_player_colors_return:
 
              ; Switch players & update the board
              XOR current_player, FF
-             OUTPUT current_player, 40
+             OUTPUT current_player, addr_out_current_player
              CALL set_next_plays
              
              ; Validate the player can play
@@ -117,6 +118,7 @@ set_current_player_colors_return:
              
              ; Switch players & update the board
              XOR current_player, FF
+             OUTPUT current_player, addr_out_current_player
              CALL set_next_plays
              
              ; Validate the other player can play
@@ -138,29 +140,34 @@ set_current_player_colors_return:
              ; Loop through the board to determine if there is more black or white.
              LOAD board_pos, 00
    color_count_loop:
-            INPUT temp_color, (board_pos)
-            AND temp_color, 0F
-            COMPARE s0, space_white
-            JUMP Z, add_to_white
-            COMPARE s0, space_black
-            JUMP Z, add_to_black
-            JUMP done_adding
+             INPUT temp_color, (board_pos)
+             AND temp_color, 0F
+             COMPARE temp_color, space_white
+             JUMP Z, add_to_white
+             COMPARE temp_color, space_black
+             JUMP Z, add_to_black
+             JUMP done_adding
    add_to_white:
-            ADD s3, 01
-            JUMP done_adding
+             ADD s3, 01
+             JUMP done_adding
    add_to_black:
-            ADD s4, 01
+             ADD s4, 01
    done_adding:
              ADD board_pos, 01
              COMPARE board_pos, 40
              JUMP NZ, color_count_loop
 
-            ; Check which is bigger, black or white.
-            LOAD temp_color, pure_white
-            SUB s4, s3
-            JUMP C, white_won 
-            LOAD temp_color, pure_black
+             ; Check which is bigger, black or white.
+             LOAD temp_color, pure_white
+             LOAD current_player, 00
+             COMPARE s4, s3
+             JUMP C, white_won 
+             LOAD temp_color, pure_black
+             LOAD current_player, FF
     white_won:
+
+             ; Set the current player color to the winner.
+             OUTPUT current_player, addr_out_current_player
              
              ; Set the whole board to the winner
              LOAD board_pos, 00
