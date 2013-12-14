@@ -1,14 +1,6 @@
 Reversi
 =======
 
-Project Goal
-------------
-The objective of this project is to develop a VHDL implementation of Reversi/Othello using the Digilent Nexys 2 board, a VGA display, and an external human interface device such as a mouse or keyboard. It is expected that the PicoBlaze processor core will be used for the implementation of the game rule logic.
-
-Basic Requirements
-------------------
-* Render board on VGA display
-* Allow selection of next move position using external input device (mouse or keyboard)
-* Detect and ignore illegal move attempts
-* Detect piece captures
-* Detect win conditions
+Overview
+--------
+This project is an implementation of [Reversi](https://en.wikipedia.org/wiki/Reversi) designed to run on the [Digilent Nexys 2](http://www.digilentinc.com/Products/Detail.cfm?Prod=NEXYS2) development board. The overall system is implemented in VHDL and a PicoBlaze soft processor core is used to implement the game logic. The game is controlled using a PS/2 keyboard and displayed on a VGA monitor. More information may be found in the slides in the Doc folder.
