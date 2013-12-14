@@ -7,4 +7,4 @@ This project is an implementation of [Reversi](https://en.wikipedia.org/wiki/Rev
 
 Output
 ------
-![alt tag](https://raw.github.com/jamesfrank/Reversi/master/Doc/Board.jpg)
+![Reversi board](https://raw.github.com/jamesfrank/Reversi/master/Doc/Board.jpg)
